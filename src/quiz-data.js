@@ -1,0 +1,58 @@
+export const quizQuestions = [
+  {
+    question: 'Theo luận điểm trung tâm, văn hóa và con người liên hệ với nhau thế nào?',
+    options: ['Văn hóa chỉ tác động đến nghệ thuật.', 'Con người sáng tạo văn hóa; văn hóa bồi dưỡng con người.', 'Hai lĩnh vực tồn tại tách biệt.', 'Văn hóa chỉ được tạo ra trong nhà trường.'],
+    answer: 1,
+    explanation: 'Quan hệ này có hai chiều: con người tạo ra văn hóa và tiếp tục được văn hóa định hướng, bồi dưỡng.',
+    source: 'Slide 2',
+  },
+  {
+    question: 'Điều nào thể hiện cách hiểu đúng về văn hóa trong bài thuyết trình?',
+    options: ['Chỉ gồm sân khấu và lễ hội.', 'Chỉ là trình độ học vấn.', 'Gồm cả cách sống, học tập, tổ chức đời sống và sáng tạo.', 'Không liên quan đến công cụ sinh hoạt.'],
+    answer: 2,
+    explanation: 'Bài trình bày nêu bốn cách tiếp cận và nhấn mạnh văn hóa rộng hơn văn nghệ.',
+    source: 'Slide 3 · GT2019 tr. 119–120',
+  },
+  {
+    question: 'Giữ bản sắc dân tộc khi giao lưu quốc tế có nghĩa là gì?',
+    options: ['Tiếp thu có chọn lọc giá trị tốt đẹp của nhân loại.', 'Từ chối mọi giá trị từ bên ngoài.', 'Chỉ sao chép mô hình của nước khác.', 'Không cần quan tâm đến văn hóa dân tộc.'],
+    answer: 0,
+    explanation: 'Bản sắc là nền tảng để tiếp thu tinh hoa có chọn lọc, không phải sự khép kín.',
+    source: 'Slide 4 · Kịch bản thuyết trình',
+  },
+  {
+    question: 'Bộ nào nêu đúng bốn vai trò của văn hóa?',
+    options: ['Lễ hội, ẩm thực, nghệ thuật, du lịch.', 'Học vấn, sức khỏe, thể thao, công nghệ.', 'Quản lý, tuyên truyền, thương mại, giải trí.', 'Mục tiêu, động lực, mặt trận, phục vụ nhân dân.'],
+    answer: 3,
+    explanation: 'Bốn vai trò nối giá trị văn hóa với hành động và đời sống của nhân dân.',
+    source: 'Slide 5 · GT2019 tr. 122–124',
+  },
+  {
+    question: 'Ba tính chất của nền văn hóa mới là gì?',
+    options: ['Truyền thống, hiện đại, quốc tế.', 'Dân tộc, khoa học, đại chúng.', 'Đạo đức, kinh tế, chính trị.', 'Cá nhân, tập thể, cộng đồng.'],
+    answer: 1,
+    explanation: 'Dân tộc giữ cốt cách; khoa học hướng tới tiến bộ có căn cứ; đại chúng do và vì nhân dân.',
+    source: 'Slide 6 · GT2019 tr. 124–125',
+  },
+  {
+    question: 'Vì sao con người vừa là mục tiêu, vừa là động lực?',
+    options: ['Vì con người chỉ thụ hưởng thành quả.', 'Vì con người chỉ có nhiệm vụ lao động.', 'Vì phát triển hướng tới hạnh phúc con người và do con người chủ động tạo ra.', 'Vì hai khái niệm này hoàn toàn giống nhau.'],
+    answer: 2,
+    explanation: 'Con người được chăm lo phát triển, đồng thời là chủ thể lao động và sáng tạo để tạo ra thay đổi.',
+    source: 'Slide 8 · GT2019 tr. 139–140',
+  },
+  {
+    question: 'Trong tư tưởng “trồng người”, “hồng” và “chuyên” cần được hiểu thế nào?',
+    options: ['Phẩm chất và năng lực cần phát triển cùng nhau.', 'Chỉ cần phẩm chất, không cần chuyên môn.', 'Chỉ cần chuyên môn, không cần trách nhiệm.', 'Hai yếu tố không liên quan.'],
+    answer: 0,
+    explanation: 'Phẩm chất định hướng cách dùng tri thức; năng lực biến mục đích tốt thành kết quả thực tế.',
+    source: 'Slide 9 · Kịch bản thuyết trình',
+  },
+  {
+    question: 'Hành vi nào phù hợp nhất với phần vận dụng dành cho sinh viên?',
+    options: ['Chia sẻ thông tin đang nổi mà không kiểm tra.', 'Kiểm chứng nguồn, dùng AI minh bạch và chịu trách nhiệm về nội dung.', 'Sao chép bài làm khi thiếu thời gian.', 'Tránh mọi góp ý để giữ quan điểm riêng.'],
+    answer: 1,
+    explanation: 'Bài thuyết trình đề xuất học có nguồn, giao tiếp có trách nhiệm, làm việc có kỷ luật và đóng góp cho cộng đồng.',
+    source: 'Slide 10 · Kịch bản thuyết trình',
+  },
+];

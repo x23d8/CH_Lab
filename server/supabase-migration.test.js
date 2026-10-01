@@ -1,0 +1,80 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+import { PGlite } from '@electric-sql/pglite';
+
+const migration = await readFile(new URL('../supabase/migrations/20261001_online_classroom.sql', import.meta.url), 'utf8');
+const id = number => `00000000-0000-4000-8000-${String(number).padStart(12, '0')}`;
+
+test('migration: phân 10 người/phòng và dùng một lượt kiểm tra cho mọi phòng', async () => {
+  const db = new PGlite();
+  try {
+    await db.exec(`
+      create role anon;
+      create role authenticated;
+      create schema auth;
+      create table auth.users(id uuid primary key);
+      create function auth.uid() returns uuid language sql stable as $$
+        select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid
+      $$;
+      grant usage on schema auth to authenticated;
+      create schema realtime;
+      create table realtime.messages(extension text);
+      create function realtime.topic() returns text language sql stable as $$ select 'hcm-global'::text $$;
+    `);
+    await db.exec(migration);
+    const call = async (number, query) => {
+      await db.query(`select set_config('request.jwt.claim.sub', $1, false)`, [id(number)]);
+      return (await db.query(query)).rows[0];
+    };
+    for (let number = 1; number <= 11; number++) {
+      await db.query('insert into auth.users(id) values ($1)', [id(number)]);
+    }
+    await db.exec('set role authenticated;');
+    const teacher = (await call(1, "select public.hcm_join('NHOM3HCM202AI1802') as state")).state;
+    assert.equal(teacher.me.role, 'teacher');
+    assert.equal(teacher.me.roomNo, 1);
+
+    let tenthStudent;
+    for (let number = 2; number <= 11; number++) {
+      const state = (await call(number, `select public.hcm_join('Sinh viên ${number}') as state`)).state;
+      if (number <= 10) assert.equal(state.me.roomNo, 1);
+      else tenthStudent = state;
+    }
+    assert.equal(tenthStudent.me.roomNo, 2);
+    assert.deepEqual(tenthStudent.counts, { online: 11, seated: 0, rooms: 2, roomOccupancy: 1, roomCapacity: 10 });
+    assert.equal((await call(11, "select hcm_private.hcm_channel_access('hcm-room-2') as allowed")).allowed, true);
+    assert.equal((await call(11, "select hcm_private.hcm_channel_access('hcm-room-1') as allowed")).allowed, false);
+    await assert.rejects(call(11, 'select * from public.hcm_exam_questions'), /permission denied/);
+    await assert.rejects(call(2, 'select public.hcm_start_exam()'), /Chỉ giảng viên/);
+
+    for (const number of [2, 11]) {
+      await call(number, 'select public.hcm_touch(-5.65, -0.85, 0)');
+      const state = (await call(number, 'select public.hcm_sit(0) as state')).state;
+      assert.equal(state.me.seatId, 0);
+    }
+    const opened = (await call(1, 'select public.hcm_start_exam() as state')).state;
+    assert.equal(opened.counts.seated, 2);
+    assert.equal(opened.exam.participantCount, 2);
+    assert.equal(opened.exam.phase, 'active');
+    assert.equal(opened.me.eligible, false);
+    const otherRoom = (await call(11, 'select public.hcm_state() as state')).state;
+    assert.equal(otherRoom.me.eligible, true);
+    assert.equal(otherRoom.exam.startedAt, opened.exam.startedAt);
+    assert.equal(otherRoom.exam.endsAt, opened.exam.endsAt);
+    assert.equal(otherRoom.questions.length, 5);
+    assert.equal((await call(3, 'select public.hcm_state() as state')).state.me.eligible, false);
+
+    const first = (await call(2, "select public.hcm_submit_exam('[1,2,0,3,2]'::jsonb) as state")).state;
+    assert.equal(first.me.submitted, true);
+    assert.equal(first.exam.submittedCount, 1);
+    const second = (await call(11, "select public.hcm_submit_exam('[0,0,0,0,0]'::jsonb) as state")).state;
+    assert.equal(second.exam.phase, 'finished');
+    assert.equal(second.exam.rankings.length, 2);
+    assert.equal(second.exam.rankings[0].id, id(2));
+    assert.equal(second.exam.rankings[0].correct, 5);
+    assert.equal(second.exam.rankings[1].id, id(11));
+  } finally {
+    await db.close();
+  }
+});
