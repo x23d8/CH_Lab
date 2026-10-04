@@ -94,7 +94,7 @@ export function createLanServer({ port = 5174, host = '0.0.0.0' } = {}) {
       if (Math.hypot(x - player.x, z - player.z) > 5.5 * elapsed + .6) return;
       player.x = x; player.z = z; player.rotation = rotation;
       player.lastPoseAt = now;
-      broadcastState();
+      broadcast({ type: 'pose', id: player.id, x, z, rotation });
     } else if (message.type === 'sit') {
       if (player.role === 'teacher') { error(player, 'Ghế kiểm tra dành cho sinh viên.'); return; }
       const seatId = message.seatId;

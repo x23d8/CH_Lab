@@ -32,6 +32,7 @@ export function createSupabaseOnlineClient(url, key, onMessage, onStatus) {
   let resettingChannels = false;
   let lastPresenceAt = 0;
   let reportedResultRound = null;
+  let seatActionPending = false;
 
   async function rpc(functionName, args = {}) {
     const { data, error } = await supabase.rpc(functionName, args);
@@ -92,6 +93,7 @@ export function createSupabaseOnlineClient(url, key, onMessage, onStatus) {
 
   function consumeState(data, previousExam = latestState?.exam) {
     if (!data?.me || !data?.exam) return;
+    if (latestState?.serverNow && data.serverNow < latestState.serverNow) return;
     latestState = data;
     onMessage({ ...data, type: 'state', players: roomPlayers() });
     if (data.exam.phase === 'active' && data.me.eligible && !data.me.submitted && data.questions?.length) {
@@ -161,7 +163,7 @@ export function createSupabaseOnlineClient(url, key, onMessage, onStatus) {
         .on('presence', { event: 'sync' }, syncPresence)
         .on('broadcast', { event: 'pose' }, ({ payload }) => {
           const peer = peers.get(payload?.id);
-          if (!peer || payload.id === userId || ![payload.x, payload.z, payload.rotation].every(Number.isFinite)) return;
+          if (!peer || peer.seatId !== null || payload.id === userId || ![payload.x, payload.z, payload.rotation].every(Number.isFinite)) return;
           peer.x = payload.x; peer.z = payload.z; peer.rotation = payload.rotation;
           emitPlayers();
         })
@@ -228,8 +230,17 @@ export function createSupabaseOnlineClient(url, key, onMessage, onStatus) {
   }
 
   async function performAction(message) {
+    const seatAction = message.type === 'sit' || message.type === 'stand';
+    if (seatAction && seatActionPending) return;
+    if (seatAction) seatActionPending = true;
     try {
-      if (message.type === 'sit' || message.type === 'stand') {
+      if (seatAction) {
+        // The database pose is refreshed every 15 seconds. Validate a seat against
+        // the position at the moment the player asks to sit.
+        if (message.type === 'sit' && latestState?.me?.seatId == null) {
+          const pose = { ...currentPose };
+          await rpc('hcm_touch', { p_x: pose.x, p_z: pose.z, p_rotation: pose.rotation });
+        }
         const data = await rpc(message.type === 'sit' ? 'hcm_sit' : 'hcm_stand', message.type === 'sit' ? { p_seat: message.seatId } : {});
         const own = data.players.find(player => player.id === userId);
         if (own) currentPose = { x: own.x, z: own.z, rotation: own.rotation };
@@ -245,6 +256,7 @@ export function createSupabaseOnlineClient(url, key, onMessage, onStatus) {
         broadcastGlobal();
       }
     } catch (error) { report(error); }
+    finally { if (seatAction) seatActionPending = false; }
   }
 
   function send(message) {
@@ -252,9 +264,7 @@ export function createSupabaseOnlineClient(url, key, onMessage, onStatus) {
       if (![message.x, message.z, message.rotation].every(Number.isFinite)) return;
       currentPose = { x: message.x, z: message.z, rotation: message.rotation };
       const now = performance.now();
-      const counts = latestState?.counts;
-      const estimatedTraffic = (counts?.online || 1) * (counts?.roomOccupancy || 1);
-      const poseInterval = Math.max(250, estimatedTraffic * 1000 / 350);
+      const poseInterval = 125;
       if (!connected || !roomChannel || now - lastPoseAt < poseInterval) return;
       if (lastPose && Math.hypot(message.x - lastPose.x, message.z - lastPose.z) < .025 && Math.abs(message.rotation - lastPose.rotation) < .04) return;
       lastPose = currentPose; lastPoseAt = now;

@@ -305,6 +305,8 @@ function handleOnlineMessage(message) {
     updateLeaderboard(message.exam);
   } else if (message.type === 'players') {
     classroom?.syncPlayers(message.players, selfId);
+  } else if (message.type === 'pose') {
+    classroom?.syncPose(message);
   } else if (message.type === 'exam_open') {
     showExam(message);
   } else if (message.type === 'exam_result') {

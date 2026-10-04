@@ -413,6 +413,7 @@ export function createClassroom(canvas, { onArtwork, onQuiz, onNearby, onSeat = 
   const remotePlayers = new Map();
   let selfSeatId = null;
   let selfId = null;
+  let selfPoseInitialized = false;
   const raycaster = new THREE.Raycaster();
   const interactiveMeshes = [...artMeshes, ...quizTv.pickables, ...desks.flatMap(desk => desk.chairMeshes)];
   const pointer = new THREE.Vector2();
@@ -435,7 +436,8 @@ export function createClassroom(canvas, { onArtwork, onQuiz, onNearby, onSeat = 
       if (player.seatId !== null) desks[player.seatId].paper.visible = true;
       if (player.id === selfId) {
         character.setAppearance(player.name, player.role);
-        if (player.seatId !== selfSeatId) {
+        if (!selfPoseInitialized || player.seatId !== selfSeatId) {
+          selfPoseInitialized = true;
           selfSeatId = player.seatId;
           character.root.position.set(player.x, 0, player.z);
           character.body.rotation.y = player.rotation;
@@ -447,6 +449,7 @@ export function createClassroom(canvas, { onArtwork, onQuiz, onNearby, onSeat = 
       if (!avatar) {
         avatar = makeCharacter(room);
         avatar.root.position.set(player.x, 0, player.z);
+        avatar.walkTime = 0;
         remotePlayers.set(player.id, avatar);
       }
       avatar.setAppearance(player.name, player.role);
@@ -455,6 +458,12 @@ export function createClassroom(canvas, { onArtwork, onQuiz, onNearby, onSeat = 
     for (const [id, avatar] of remotePlayers) {
       if (!seen.has(id)) { room.remove(avatar.root); remotePlayers.delete(id); }
     }
+  }
+
+  function syncPose({ id, x, z, rotation }) {
+    const avatar = remotePlayers.get(id);
+    if (!avatar || avatar.target?.seatId !== null || ![x, z, rotation].every(Number.isFinite)) return;
+    avatar.target = { ...avatar.target, x, z, rotation };
   }
 
   function canMove(x, z) {
@@ -483,7 +492,13 @@ export function createClassroom(canvas, { onArtwork, onQuiz, onNearby, onSeat = 
   function activateInteraction(target) {
     if (!target) return;
     if (target.type === 'quiz') onQuiz();
-    else if (target.type === 'seat') onSeat(target.seatId);
+    else if (target.type === 'seat') {
+      if (selfSeatId === null) {
+        onPose({ x: character.root.position.x, z: character.root.position.z, rotation: character.body.rotation.y });
+        lastPoseFrame = performance.now();
+      }
+      onSeat(target.seatId);
+    }
     else onArtwork(target.artwork);
   }
 
@@ -568,11 +583,25 @@ export function createClassroom(canvas, { onArtwork, onQuiz, onNearby, onSeat = 
     for (const avatar of remotePlayers.values()) {
       if (!avatar.target) continue;
       const { x, z, rotation, seatId } = avatar.target;
-      const amount = Math.min(1, dt * (seatId === null ? 10 : 20));
+      const amount = 1 - Math.exp(-dt * (seatId === null ? 11 : 20));
+      const previousX = avatar.root.position.x;
+      const previousZ = avatar.root.position.z;
       avatar.root.position.x += (x - avatar.root.position.x) * amount;
       avatar.root.position.z += (z - avatar.root.position.z) * amount;
       avatar.body.rotation.y += Math.atan2(Math.sin(rotation - avatar.body.rotation.y), Math.cos(rotation - avatar.body.rotation.y)) * amount;
-      avatar.legs.forEach(l => { l.rotation.x += ((seatId !== null ? -1.2 : 0) - l.rotation.x) * .2; });
+      const walking = seatId === null && Math.hypot(avatar.root.position.x - previousX, avatar.root.position.z - previousZ) > .004;
+      if (walking) {
+        avatar.walkTime += dt * 9;
+        avatar.body.position.y = Math.abs(Math.sin(avatar.walkTime)) * .055;
+        avatar.arms[0].rotation.x = Math.sin(avatar.walkTime) * .48;
+        avatar.arms[1].rotation.x = -Math.sin(avatar.walkTime) * .48;
+        avatar.legs[0].rotation.x = -Math.sin(avatar.walkTime) * .47;
+        avatar.legs[1].rotation.x = Math.sin(avatar.walkTime) * .47;
+      } else {
+        avatar.body.position.y *= .85;
+        avatar.arms.forEach(arm => { arm.rotation.x *= .8; });
+        avatar.legs.forEach(leg => { leg.rotation.x += ((seatId !== null ? -1.2 : 0) - leg.rotation.x) * .2; });
+      }
     }
     if (selfId && selfSeatId === null && now - lastPoseFrame > 100) {
       onPose({ x: character.root.position.x, z: character.root.position.z, rotation: character.body.rotation.y });
@@ -591,6 +620,7 @@ export function createClassroom(canvas, { onArtwork, onQuiz, onNearby, onSeat = 
     resetCamera() { camera.position.set(19, 18, 23); controls.target.set(0, 1.45, 0); camera.zoom = 0.9; camera.updateProjectionMatrix(); controls.update(); },
     inspectNearby() { activateInteraction(nearestInteraction()); },
     syncPlayers,
+    syncPose,
     getSeatId() { return selfSeatId; },
   };
 }

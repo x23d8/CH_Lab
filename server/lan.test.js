@@ -77,6 +77,8 @@ test('hai sinh viên ngồi, giảng viên mở đề và máy chủ xếp hạn
   assert.match((await first.wait('error')).message, /Chỉ giảng viên/);
 
   await Promise.all([walkTo(first, 1.05, 4.75), walkTo(second, -2.35, 4.75)]);
+  const movingPose = await teacher.wait('pose', pose => pose.id === first.identity.id && Math.hypot(pose.x - 1.05, pose.z - 4.75) < .1);
+  assert.equal(movingPose.type, 'pose');
   first.send({ type: 'sit', seatId: 8 });
   second.send({ type: 'sit', seatId: 7 });
   await teacher.wait('state', state => state.players.filter(player => player.seatId !== null).length === 2);

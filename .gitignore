@@ -6,3 +6,6 @@ dist/
 .chrome-preview/
 .edge-preview/
 *-preview.png
+
+.vercel
+.env*
