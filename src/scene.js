@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { artworks } from './presentation-art.js';
 import { deskPositions, seatPosition } from './classroom-config.js';
+import { createMotionBuffer, pushMotionSample, readMotionBuffer } from './remote-motion.js';
 
 const palette = {
   ink: 0x416567, mint: 0xc9ead8, darkMint: 0x83bca5, cream: 0xfff6dd,
@@ -421,12 +422,29 @@ export function createClassroom(canvas, { onArtwork, onQuiz, onNearby, onSeat = 
   const keys = new Set();
   const mobile = { x: 0, z: 0 };
   let walkTime = 0;
+  let velocityX = 0;
+  let velocityZ = 0;
   let lastTime = performance.now();
   let pointerDown = null;
   let nearest = null;
   let active = true;
   let lastTvFrame = 0;
   let lastPoseFrame = 0;
+  const remoteDelayMs = 150;
+
+  function updateRemoteAvatar(avatar, pose) {
+    const now = performance.now();
+    if (avatar.target?.seatId !== pose.seatId ||
+        (avatar.target && Math.hypot(pose.x - avatar.target.x, pose.z - avatar.target.z) > 1.5)) {
+      // Seat changes and large corrections should not animate through furniture.
+      avatar.root.position.set(pose.x, 0, pose.z);
+      avatar.body.rotation.y = pose.rotation;
+      avatar.motion = createMotionBuffer(pose, now);
+    } else {
+      pushMotionSample(avatar.motion, pose, now);
+    }
+    avatar.target = { x: pose.x, z: pose.z, rotation: pose.rotation, seatId: pose.seatId };
+  }
 
   function syncPlayers(players, ownId) {
     selfId = ownId;
@@ -450,10 +468,11 @@ export function createClassroom(canvas, { onArtwork, onQuiz, onNearby, onSeat = 
         avatar = makeCharacter(room);
         avatar.root.position.set(player.x, 0, player.z);
         avatar.walkTime = 0;
+        avatar.motion = createMotionBuffer(player, performance.now());
         remotePlayers.set(player.id, avatar);
       }
       avatar.setAppearance(player.name, player.role);
-      avatar.target = { x: player.x, z: player.z, rotation: player.rotation, seatId: player.seatId };
+      updateRemoteAvatar(avatar, player);
     }
     for (const [id, avatar] of remotePlayers) {
       if (!seen.has(id)) { room.remove(avatar.root); remotePlayers.delete(id); }
@@ -463,7 +482,7 @@ export function createClassroom(canvas, { onArtwork, onQuiz, onNearby, onSeat = 
   function syncPose({ id, x, z, rotation }) {
     const avatar = remotePlayers.get(id);
     if (!avatar || avatar.target?.seatId !== null || ![x, z, rotation].every(Number.isFinite)) return;
-    avatar.target = { ...avatar.target, x, z, rotation };
+    updateRemoteAvatar(avatar, { x, z, rotation, seatId: null });
   }
 
   function canMove(x, z) {
@@ -557,6 +576,8 @@ export function createClassroom(canvas, { onArtwork, onQuiz, onNearby, onSeat = 
     let side = Number(keys.has('d') || keys.has('arrowright')) - Number(keys.has('a') || keys.has('arrowleft')) + mobile.x;
     let forward = Number(keys.has('w') || keys.has('arrowup')) - Number(keys.has('s') || keys.has('arrowdown')) + mobile.z;
     const length = Math.hypot(side, forward);
+    let desiredX = 0;
+    let desiredZ = 0;
     if (active && selfSeatId === null && length > 0.05) {
       side /= Math.max(1, length); forward /= Math.max(1, length);
       const cameraForward = new THREE.Vector3(); camera.getWorldDirection(cameraForward); cameraForward.y = 0; cameraForward.normalize();
@@ -564,17 +585,35 @@ export function createClassroom(canvas, { onArtwork, onQuiz, onNearby, onSeat = 
       const vx = cameraRight.x * side + cameraForward.x * forward;
       const vz = cameraRight.z * side + cameraForward.z * forward;
       const speed = keys.has('shift') ? 4.65 : 3.05;
+      desiredX = vx * speed;
+      desiredZ = vz * speed;
+    }
+    if (!active || selfSeatId !== null) {
+      velocityX = 0;
+      velocityZ = 0;
+    } else {
+      const response = 1 - Math.exp(-dt * (length > .05 ? 16 : 22));
+      velocityX += (desiredX - velocityX) * response;
+      velocityZ += (desiredZ - velocityZ) * response;
+    }
+    const walkingSpeed = Math.hypot(velocityX, velocityZ);
+    if (walkingSpeed > .05) {
       const p = character.root.position;
-      if (canMove(p.x + vx * dt * speed, p.z)) p.x += vx * dt * speed;
-      if (canMove(p.x, p.z + vz * dt * speed)) p.z += vz * dt * speed;
-      const targetAngle = Math.atan2(vx, vz);
-      character.body.rotation.y += Math.atan2(Math.sin(targetAngle - character.body.rotation.y), Math.cos(targetAngle - character.body.rotation.y)) * Math.min(1, dt * 10);
+      if (canMove(p.x + velocityX * dt, p.z)) p.x += velocityX * dt;
+      else velocityX = 0;
+      if (canMove(p.x, p.z + velocityZ * dt)) p.z += velocityZ * dt;
+      else velocityZ = 0;
+      if (Math.hypot(velocityX, velocityZ) > .05) {
+        const targetAngle = Math.atan2(velocityX, velocityZ);
+        character.body.rotation.y += Math.atan2(Math.sin(targetAngle - character.body.rotation.y), Math.cos(targetAngle - character.body.rotation.y)) * Math.min(1, dt * 10);
+      }
       walkTime += dt * 9;
-      character.body.position.y = Math.abs(Math.sin(walkTime)) * 0.055;
-      character.arms[0].rotation.x = Math.sin(walkTime) * 0.48;
-      character.arms[1].rotation.x = -Math.sin(walkTime) * 0.48;
-      character.legs[0].rotation.x = -Math.sin(walkTime) * 0.47;
-      character.legs[1].rotation.x = Math.sin(walkTime) * 0.47;
+      const stride = Math.min(1, Math.hypot(velocityX, velocityZ) / 3.05);
+      character.body.position.y = Math.abs(Math.sin(walkTime)) * 0.055 * stride;
+      character.arms[0].rotation.x = Math.sin(walkTime) * 0.48 * stride;
+      character.arms[1].rotation.x = -Math.sin(walkTime) * 0.48 * stride;
+      character.legs[0].rotation.x = -Math.sin(walkTime) * 0.47 * stride;
+      character.legs[1].rotation.x = Math.sin(walkTime) * 0.47 * stride;
     } else {
       character.body.position.y *= 0.85;
       character.arms.forEach(a => a.rotation.x *= 0.8);
@@ -582,13 +621,12 @@ export function createClassroom(canvas, { onArtwork, onQuiz, onNearby, onSeat = 
     }
     for (const avatar of remotePlayers.values()) {
       if (!avatar.target) continue;
-      const { x, z, rotation, seatId } = avatar.target;
-      const amount = 1 - Math.exp(-dt * (seatId === null ? 11 : 20));
+      const { seatId } = avatar.target;
+      const { x, z, rotation } = readMotionBuffer(avatar.motion, now - remoteDelayMs);
       const previousX = avatar.root.position.x;
       const previousZ = avatar.root.position.z;
-      avatar.root.position.x += (x - avatar.root.position.x) * amount;
-      avatar.root.position.z += (z - avatar.root.position.z) * amount;
-      avatar.body.rotation.y += Math.atan2(Math.sin(rotation - avatar.body.rotation.y), Math.cos(rotation - avatar.body.rotation.y)) * amount;
+      avatar.root.position.set(x, 0, z);
+      avatar.body.rotation.y = rotation;
       const walking = seatId === null && Math.hypot(avatar.root.position.x - previousX, avatar.root.position.z - previousZ) > .004;
       if (walking) {
         avatar.walkTime += dt * 9;
