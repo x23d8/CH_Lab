@@ -7,12 +7,12 @@ import { createLanServer } from './lan.js';
 import { rankSubmissions, scoreAnswers } from './scoring.js';
 
 test('chấm theo số câu đúng rồi thời gian hoàn thành', () => {
-  assert.equal(scoreAnswers([1, 2, 0, 3, 2]), 5);
-  assert.equal(scoreAnswers([0, 2, 0, 3, 2]), 4);
+  assert.equal(scoreAnswers([0, 0, 2, 0, 1, 1, 2, 0, 0, 3]), 10);
+  assert.equal(scoreAnswers([1, 1, 2, 0, 1, 1, 2, 0, 0, 3]), 8);
   const ranked = rankSubmissions([
-    { id: 'b', name: 'B', correct: 4, durationMs: 2000, submittedAt: 2000 },
-    { id: 'a', name: 'A', correct: 5, durationMs: 7000, submittedAt: 7000 },
-    { id: 'c', name: 'C', correct: 4, durationMs: 1000, submittedAt: 1000 },
+    { id: 'b', name: 'B', correct: 8, durationMs: 2000, submittedAt: 2000 },
+    { id: 'a', name: 'A', correct: 10, durationMs: 7000, submittedAt: 7000 },
+    { id: 'c', name: 'C', correct: 8, durationMs: 1000, submittedAt: 1000 },
   ]);
   assert.deepEqual(ranked.map(row => row.id), ['a', 'c', 'b']);
 });
@@ -39,6 +39,7 @@ test('hai sinh viên ngồi, giảng viên mở đề và máy chủ xếp hạn
     });
     const client = {
       ws,
+      inbox,
       send: message => ws.send(JSON.stringify(message)),
       wait: (type, check = () => true) => {
         const existing = inbox.find(message => message.type === type && check(message));
@@ -77,6 +78,16 @@ test('hai sinh viên ngồi, giảng viên mở đề và máy chủ xếp hạn
   const isolatedState = await otherRoom.wait('state', state => state.counts?.online === 4);
   assert.deepEqual(isolatedState.players.map(player => player.name), ['Chi']);
 
+  first.send({ type: 'chat', text: '  Chào cả phòng!  ' });
+  const chat = await teacher.wait('chat');
+  assert.equal(chat.name, 'An');
+  assert.equal(chat.text, 'Chào cả phòng!');
+  await new Promise(resolve => setTimeout(resolve, 50));
+  assert.equal(otherRoom.inbox.some(message => message.type === 'chat'), false);
+  const lateJoiner = await join('Dũng');
+  await new Promise(resolve => setTimeout(resolve, 50));
+  assert.equal(lateJoiner.inbox.some(message => message.type === 'chat'), false);
+
   first.send({ type: 'start_exam' });
   assert.match((await first.wait('error')).message, /Chỉ giảng viên/);
 
@@ -88,13 +99,13 @@ test('hai sinh viên ngồi, giảng viên mở đề và máy chủ xếp hạn
   await teacher.wait('state', state => state.players.filter(player => player.seatId !== null).length === 2);
   teacher.send({ type: 'start_exam' });
   const [firstExam, secondExam] = await Promise.all([first.wait('exam_open'), second.wait('exam_open')]);
-  assert.equal(firstExam.questions.length, 5);
+  assert.equal(firstExam.questions.length, 10);
   assert.equal(firstExam.questions[0].answer, undefined);
   assert.equal(secondExam.endsAt - secondExam.startedAt, 15 * 60_000);
 
-  second.send({ type: 'submit_exam', answers: [0, 2, 0, 3, 2] });
+  second.send({ type: 'submit_exam', answers: [1, 1, 2, 0, 1, 1, 2, 0, 0, 3] });
   await second.wait('exam_result');
-  first.send({ type: 'submit_exam', answers: [1, 2, 0, 3, 2] });
+  first.send({ type: 'submit_exam', answers: [0, 0, 2, 0, 1, 1, 2, 0, 0, 3] });
   const done = await teacher.wait('exam_finished');
   assert.equal(done.rankings[0].name, 'An');
   assert.equal(done.rankings[0].points, 100);

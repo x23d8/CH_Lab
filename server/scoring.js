@@ -12,7 +12,7 @@ export function rankSubmissions(submissions) {
     id: entry.id,
     name: entry.name,
     correct: entry.correct,
-    points: entry.correct * 20,
+    points: Math.round(entry.correct / examQuestions.length * 100),
     durationMs: entry.durationMs,
     submittedAt: entry.submittedAt,
     automatic: Boolean(entry.automatic),

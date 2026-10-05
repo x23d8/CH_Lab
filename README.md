@@ -5,7 +5,7 @@ Lớp học 3D bằng Three.js và Vite. Người chơi khám phá tám tranh v�
 ## Chạy bản trực tuyến
 
 1. Tạo dự án Supabase. Trong **Authentication → Providers**, bật **Anonymous Sign-Ins**.
-2. Trong **SQL Editor**, chạy toàn bộ [migration lớp học](supabase/migrations/20261001_online_classroom.sql) một lần. Nếu cơ sở dữ liệu đã được cài trước ngày 05/10/2026, chỉ cần chạy thêm [migration chọn phòng](supabase/migrations/20261005_room_selection.sql). Ứng dụng dùng các kênh `private: true` và chính sách truy cập trong migration. Có thể để **Allow public access** bật; tắt tùy chọn này nếu muốn toàn bộ dự án chỉ cho phép kênh riêng, không cho tạo kênh công khai.
+2. Trong **SQL Editor**, chạy toàn bộ [migration lớp học](supabase/migrations/20261001_online_classroom.sql) một lần. Nếu cơ sở dữ liệu đã được cài trước ngày 05/10/2026, chạy thêm [migration chọn phòng](supabase/migrations/20261005_room_selection.sql) và [migration đề kiểm tra 10 câu](supabase/migrations/20261005_exam_questions_10.sql). Ứng dụng dùng các kênh `private: true` và chính sách truy cập trong migration. Có thể để **Allow public access** bật; tắt tùy chọn này nếu muốn toàn bộ dự án chỉ cho phép kênh riêng, không cho tạo kênh công khai.
 3. Tạo `.env` từ `.env.example` và điền URL cùng **publishable key** của dự án. Không đưa `service_role` hoặc secret key vào ứng dụng trình duyệt. `.env` hiện có với tên `NEXT_PUBLIC_SUPABASE_URL` và `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` cũng được hỗ trợ.
 4. Chạy:
 
@@ -26,6 +26,8 @@ Mở địa chỉ Vite in trong terminal. Khi triển khai Vercel, đặt `VITE_
 - Để thử nhiều người, dùng các trình duyệt/profiles hoặc thiết bị khác nhau. Các tab cùng profile chia sẻ phiên đăng nhập ẩn danh và được tính là **một người chơi**.
 
 Vị trí nhân vật truyền qua Supabase Realtime Broadcast với giới hạn tối đa 4 cập nhật/giây khi di chuyển và tự giảm nhịp khi số người/phòng tăng; Presence giữ danh sách người trong từng phòng. Việc phân phòng, ghế, đồng hồ và điểm số được xử lý bằng hàm Postgres trong migration. Khi 10 người cùng di chuyển liên tục, gói Supabase Free có thể chạm giới hạn Realtime; nên đo tải trên dự án thật và dùng gói có hạn mức phù hợp. Chạy `npm run test:online` để thử migration và luồng kiểm tra trên PostgreSQL thu gọn. Bản LAN cũ vẫn có thể chạy riêng bằng `npm run dev:lan`; `npm run test:lan` kiểm tra luồng LAN.
+
+Trò chuyện dùng Realtime Broadcast theo từng phòng và chỉ giữ tối đa 60 tin nhắn trong RAM của mỗi trình duyệt. Tin cũ không được ghi vào PostgreSQL, không chuyển cho người vào sau và tự mất khi tải lại, thoát trang hoặc chuyển phòng.
 
 ## Điều khiển
 

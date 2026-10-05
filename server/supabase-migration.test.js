@@ -5,6 +5,7 @@ import { PGlite } from '@electric-sql/pglite';
 
 const migration = await readFile(new URL('../supabase/migrations/20261001_online_classroom.sql', import.meta.url), 'utf8');
 const roomSelectionMigration = await readFile(new URL('../supabase/migrations/20261005_room_selection.sql', import.meta.url), 'utf8');
+const examQuestionsMigration = await readFile(new URL('../supabase/migrations/20261005_exam_questions_10.sql', import.meta.url), 'utf8');
 const id = number => `00000000-0000-4000-8000-${String(number).padStart(12, '0')}`;
 
 test('migration: phân 10 người/phòng và dùng một lượt kiểm tra cho mọi phòng', async () => {
@@ -25,6 +26,7 @@ test('migration: phân 10 người/phòng và dùng một lượt kiểm tra cho
     `);
     await db.exec(migration);
     await db.exec(roomSelectionMigration);
+    await db.exec(examQuestionsMigration);
     const call = async (number, query) => {
       await db.query(`select set_config('request.jwt.claim.sub', $1, false)`, [id(number)]);
       return (await db.query(query)).rows[0];
@@ -71,17 +73,17 @@ test('migration: phân 10 người/phòng và dùng một lượt kiểm tra cho
     assert.equal(otherRoom.me.eligible, true);
     assert.equal(otherRoom.exam.startedAt, opened.exam.startedAt);
     assert.equal(otherRoom.exam.endsAt, opened.exam.endsAt);
-    assert.equal(otherRoom.questions.length, 5);
+    assert.equal(otherRoom.questions.length, 10);
     assert.equal((await call(3, 'select public.hcm_state() as state')).state.me.eligible, false);
 
-    const first = (await call(2, "select public.hcm_submit_exam('[1,2,0,3,2]'::jsonb) as state")).state;
+    const first = (await call(2, "select public.hcm_submit_exam('[0,0,2,0,1,1,2,0,0,3]'::jsonb) as state")).state;
     assert.equal(first.me.submitted, true);
     assert.equal(first.exam.submittedCount, 1);
-    const second = (await call(11, "select public.hcm_submit_exam('[0,0,0,0,0]'::jsonb) as state")).state;
+    const second = (await call(11, "select public.hcm_submit_exam('[0,0,0,0,0,0,0,0,0,0]'::jsonb) as state")).state;
     assert.equal(second.exam.phase, 'finished');
     assert.equal(second.exam.rankings.length, 2);
     assert.equal(second.exam.rankings[0].id, id(2));
-    assert.equal(second.exam.rankings[0].correct, 5);
+    assert.equal(second.exam.rankings[0].correct, 10);
     assert.equal(second.exam.rankings[1].id, id(11));
   } finally {
     await db.close();

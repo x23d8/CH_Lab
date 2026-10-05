@@ -24,6 +24,7 @@ export function createSupabaseOnlineClient(url, key, onMessage, onStatus) {
   let currentPose = { x: 4.6, z: 3.7, rotation: 0, vx: 0, vz: 0 };
   let lastPose = null;
   let lastPoseAt = 0;
+  let lastChatAt = 0;
   let poseSequence = 0;
   let heartbeatTimer = null;
   let pollTimer = null;
@@ -179,6 +180,13 @@ export function createSupabaseOnlineClient(url, key, onMessage, onStatus) {
           onMessage({ type: 'pose', id: payload.id, x: payload.x, z: payload.z, rotation: payload.rotation,
             vx: peer.vx, vz: peer.vz, seq: payload.seq });
         })
+        .on('broadcast', { event: 'chat' }, ({ payload }) => {
+          const sender = peers.get(payload?.id) || latestState?.players?.find(player => player.id === payload?.id);
+          const text = typeof payload?.text === 'string' ? payload.text.trim().slice(0, 200) : '';
+          if (!sender || sender.id === userId || !text) return;
+          onMessage({ type: 'chat', id: sender.id, name: sender.name, text,
+            sentAt: Number.isFinite(payload.sentAt) ? payload.sentAt : Date.now(), messageId: payload.messageId });
+        })
         .on('broadcast', { event: 'seat-changed' }, () => refresh());
       await subscribe(roomChannel);
     }
@@ -298,6 +306,16 @@ export function createSupabaseOnlineClient(url, key, onMessage, onStatus) {
           Math.hypot(currentPose.vx - lastPose.vx, currentPose.vz - lastPose.vz) < .08) return;
       lastPose = currentPose; lastPoseAt = now;
       roomChannel.send({ type: 'broadcast', event: 'pose', payload: { id: userId, seq: ++poseSequence, ...currentPose } });
+    } else if (message.type === 'chat') {
+      const text = typeof message.text === 'string' ? message.text.trim().slice(0, 200) : '';
+      if (!connected || !roomChannel || !latestState?.me || !text) return;
+      const sentAt = Date.now();
+      if (sentAt - lastChatAt < 300) return;
+      lastChatAt = sentAt;
+      const payload = { id: userId, text, sentAt,
+        messageId: crypto.randomUUID?.() || `${userId}:${sentAt}` };
+      onMessage({ type: 'chat', ...payload, name: latestState.me.name });
+      roomChannel.send({ type: 'broadcast', event: 'chat', payload });
     } else if (userId) performAction(message);
   }
 

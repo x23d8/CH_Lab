@@ -27,6 +27,7 @@ document.querySelector('#app').innerHTML = `
         <span class="sunny-pill">${sunIcon}<span>Một ngày nắng thật đẹp</span></span>
         <span id="lan-status" class="lan-status" role="status">Đang kết nối</span>
         <span id="online-count" class="lan-status online-count" role="status">0 trực tuyến · 0 đã ngồi · Phòng 1</span>
+        <button id="chat-button" class="score-button chat-button" type="button" aria-expanded="false" aria-controls="chat-panel" title="Trò chuyện trong phòng"><span class="chat-icon" aria-hidden="true">●</span><span class="chat-label">Trò chuyện</span><span id="chat-unread" class="chat-unread hidden" aria-label="Tin nhắn chưa đọc"></span></button>
         <button id="leaderboard-button" class="score-button" type="button" aria-expanded="false" aria-controls="leaderboard-panel">Bảng điểm</button>
         <button id="reset-view" class="icon-button" type="button" title="Đặt lại góc nhìn" aria-label="Đặt lại góc nhìn">↺</button>
         <button id="help-button" class="icon-button help-button" type="button" title="Hướng dẫn" aria-label="Hướng dẫn">?</button>
@@ -38,6 +39,17 @@ document.querySelector('#app').innerHTML = `
         <span id="teacher-exam-status">Chờ sinh viên ngồi vào ghế</span>
         <button id="start-exam" type="button">Mở kiểm tra 15 phút</button>
         <button id="finish-exam" class="hidden" type="button">Kết thúc &amp; chấm bài</button>
+      </section>
+      <section id="chat-panel" class="chat-panel hidden" aria-label="Trò chuyện trong phòng">
+        <div class="panel-heading"><span>TRÒ CHUYỆN · PHÒNG <b id="chat-room">1</b></span><button id="close-chat" type="button" aria-label="Đóng trò chuyện">×</button></div>
+        <div id="chat-messages" class="chat-messages" role="log" aria-live="polite" aria-relevant="additions">
+          <p id="chat-empty" class="chat-empty">Chưa có tin nhắn. Hãy bắt đầu cuộc trò chuyện!</p>
+        </div>
+        <form id="chat-form" class="chat-form" autocomplete="off">
+          <input id="chat-input" type="text" maxlength="200" placeholder="Nhập tin nhắn…" aria-label="Tin nhắn" enterkeyhint="send">
+          <button type="submit" aria-label="Gửi tin nhắn">Gửi</button>
+        </form>
+        <small>Tin nhắn chỉ lưu trong RAM và sẽ mất khi thoát.</small>
       </section>
       <section id="leaderboard-panel" class="leaderboard-panel hidden" aria-label="Bảng điểm kiểm tra">
         <div class="panel-heading"><span>BẢNG XẾP HẠNG</span><button id="close-leaderboard" type="button" aria-label="Đóng bảng điểm">×</button></div>
@@ -148,11 +160,11 @@ document.querySelector('#app').innerHTML = `
       <div class="modal-backdrop"></div>
       <article class="exam-dialog" role="dialog" aria-modal="true" aria-labelledby="exam-title">
         <header class="exam-paper-header">
-          <div><p class="section-label">HCM202 · BÀI KIỂM TRA VẬN DỤNG</p><h2 id="exam-title">Văn hóa từ ta, con người vì cộng đồng</h2><span id="exam-subtitle">5 câu trắc nghiệm · 15 phút</span></div>
+          <div><p class="section-label">HCM202 · BÀI KIỂM TRA VẬN DỤNG</p><h2 id="exam-title">Văn hóa và con người trong tư tưởng Hồ Chí Minh</h2><span id="exam-subtitle">10 câu trắc nghiệm · 15 phút</span></div>
           <strong id="exam-timer" aria-live="off">15:00</strong>
         </header>
         <div class="exam-scroll"><form id="exam-form"></form></div>
-        <footer class="exam-footer"><span id="exam-progress">0 / 5 câu đã chọn</span><button id="submit-exam" type="button">Nộp bài kiểm tra →</button></footer>
+        <footer class="exam-footer"><span id="exam-progress">0 / 10 câu đã chọn</span><button id="submit-exam" type="button">Nộp bài kiểm tra →</button></footer>
       </article>
     </div>
   </main>
@@ -175,9 +187,13 @@ let connected = false;
 let examOpen = false;
 let examRound = null;
 let examEndsAt = 0;
+let examQuestionCount = 10;
 let clockOffset = 0;
 let latestState = null;
 let toastTimer = null;
+let chatMessages = [];
+let chatUnread = 0;
+const CHAT_MEMORY_LIMIT = 60;
 
 function toast(message) {
   const element = document.querySelector('#online-toast');
@@ -191,6 +207,66 @@ function showLeaderboard(open) {
   const panel = document.querySelector('#leaderboard-panel');
   panel.classList.toggle('hidden', !open);
   document.querySelector('#leaderboard-button').setAttribute('aria-expanded', String(open));
+  if (open) showChat(false);
+}
+
+function updateChatBadge() {
+  const badge = document.querySelector('#chat-unread');
+  badge.textContent = chatUnread > 99 ? '99+' : String(chatUnread);
+  badge.classList.toggle('hidden', chatUnread === 0);
+}
+
+function showChat(open) {
+  const panel = document.querySelector('#chat-panel');
+  panel.classList.toggle('hidden', !open);
+  document.querySelector('#chat-button').setAttribute('aria-expanded', String(open));
+  if (open) {
+    showLeaderboard(false);
+    chatUnread = 0; updateChatBadge();
+    requestAnimationFrame(() => {
+      const messages = document.querySelector('#chat-messages');
+      messages.scrollTop = messages.scrollHeight;
+      document.querySelector('#chat-input').focus();
+    });
+  }
+}
+
+function clearChat() {
+  chatMessages = []; chatUnread = 0;
+  document.querySelector('#chat-messages').replaceChildren(document.querySelector('#chat-empty'));
+  document.querySelector('#chat-empty').classList.remove('hidden');
+  document.querySelector('#chat-room').textContent = String(roomNo);
+  updateChatBadge();
+}
+
+function appendChatMessage(message) {
+  if (!message || typeof message.text !== 'string' || typeof message.name !== 'string') return;
+  const text = message.text.trim().slice(0, 200);
+  if (!text) return;
+  const now = Date.now();
+  const item = { id: message.id, name: message.name.slice(0, 32), text,
+    sentAt: Number.isFinite(message.sentAt) && Math.abs(message.sentAt - now) < 86_400_000 ? message.sentAt : now,
+    messageId: message.messageId };
+  if (item.messageId && chatMessages.some(entry => entry.messageId === item.messageId)) return;
+  chatMessages.push(item);
+  if (chatMessages.length > CHAT_MEMORY_LIMIT) chatMessages.shift();
+  document.querySelector('#chat-empty').classList.add('hidden');
+  const row = document.createElement('article');
+  row.className = `chat-message${item.id === selfId ? ' is-own' : ''}`;
+  const meta = document.createElement('div');
+  const name = document.createElement('strong'); name.textContent = item.id === selfId ? 'Bạn' : item.name;
+  const time = document.createElement('time');
+  time.dateTime = new Date(item.sentAt).toISOString();
+  time.textContent = new Date(item.sentAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+  const copy = document.createElement('p'); copy.textContent = item.text;
+  meta.append(name, time); row.append(meta, copy);
+  const messages = document.querySelector('#chat-messages');
+  messages.append(row);
+  while (messages.querySelectorAll('.chat-message').length > CHAT_MEMORY_LIMIT) messages.querySelector('.chat-message')?.remove();
+  messages.scrollTop = messages.scrollHeight;
+  if (document.querySelector('#chat-panel').classList.contains('hidden') && item.id !== selfId) {
+    chatUnread++; updateChatBadge();
+  }
 }
 
 function updateLeaderboard(exam) {
@@ -204,7 +280,7 @@ function updateLeaderboard(exam) {
     item.className = `rank-row rank-${Math.min(row.rank, 4)}`;
     const place = document.createElement('strong'); place.textContent = String(row.rank).padStart(2, '0');
     const name = document.createElement('span'); name.textContent = row.name;
-    const result = document.createElement('small'); result.textContent = `${row.correct}/5 · ${formatTime(row.durationMs)}`;
+    const result = document.createElement('small'); result.textContent = `${row.correct}/${examQuestionCount} · ${formatTime(row.durationMs)}`;
     item.append(place, name, result);
     return item;
   }));
@@ -256,7 +332,7 @@ function updateOnlineCounts(state) {
 
 function updateExamProgress() {
   const count = document.querySelectorAll('#exam-form input:checked').length;
-  document.querySelector('#exam-progress').textContent = `${count} / 5 câu đã chọn`;
+  document.querySelector('#exam-progress').textContent = `${count} / ${examQuestionCount} câu đã chọn`;
 }
 
 function showExam(message) {
@@ -265,6 +341,8 @@ function showExam(message) {
   if (examOpen && examRound === message.round) return;
   examRound = message.round;
   examOpen = true;
+  examQuestionCount = message.questions.length;
+  document.querySelector('#exam-subtitle').textContent = `${examQuestionCount} câu trắc nghiệm · 15 phút`;
   const form = document.querySelector('#exam-form');
   form.replaceChildren(...message.questions.map((question, index) => {
     const fieldset = document.createElement('fieldset'); fieldset.className = 'exam-question';
@@ -298,7 +376,11 @@ function hideExam() {
 function handleOnlineMessage(message) {
   if (typeof message.serverNow === 'number') clockOffset = message.serverNow - Date.now();
   if (message.type === 'welcome') {
-    selfId = message.id; role = message.role; roomNo = message.roomNo ?? roomNo;
+    const nextRoomNo = message.roomNo ?? roomNo;
+    if (selfId && nextRoomNo !== roomNo) { roomNo = nextRoomNo; clearChat(); }
+    else roomNo = nextRoomNo;
+    selfId = message.id; role = message.role;
+    document.querySelector('#chat-room').textContent = String(roomNo);
     updateLanStatus('online');
     toast(role === 'teacher' ? 'Đã vào lớp với vai trò giảng viên.' : `Chào ${message.name}, bạn đã vào phòng ${roomNo}.`);
   } else if (message.type === 'state') {
@@ -312,11 +394,13 @@ function handleOnlineMessage(message) {
     classroom?.syncPlayers(message.players, selfId);
   } else if (message.type === 'pose') {
     classroom?.syncPose(message);
+  } else if (message.type === 'chat') {
+    appendChatMessage(message);
   } else if (message.type === 'exam_open') {
     showExam(message);
   } else if (message.type === 'exam_result') {
     hideExam();
-    toast(`Đã nộp bài: ${message.row?.correct ?? 0}/5 câu đúng. Xem bảng điểm để theo dõi thứ hạng.`);
+    toast(`Đã nộp bài: ${message.row?.correct ?? 0}/${examQuestionCount} câu đúng. Xem bảng điểm để theo dõi thứ hạng.`);
     showLeaderboard(true);
   } else if (message.type === 'exam_finished') {
     if (examOpen) { hideExam(); toast('Hết giờ kiểm tra. Bài chưa nộp đã được chấm tự động.'); }
@@ -450,16 +534,27 @@ for (const input of document.querySelectorAll('#player-name, #player-room')) inp
 });
 document.querySelector('#leaderboard-button').addEventListener('click', () => showLeaderboard(document.querySelector('#leaderboard-panel').classList.contains('hidden')));
 document.querySelector('#close-leaderboard').addEventListener('click', () => showLeaderboard(false));
+document.querySelector('#chat-button').addEventListener('click', () => showChat(document.querySelector('#chat-panel').classList.contains('hidden')));
+document.querySelector('#close-chat').addEventListener('click', () => showChat(false));
+document.querySelector('#chat-form').addEventListener('submit', event => {
+  event.preventDefault();
+  const input = document.querySelector('#chat-input');
+  const text = input.value.trim();
+  if (!text) return;
+  if (!connected) { toast('Bạn cần kết nối vào phòng trước khi gửi tin nhắn.'); return; }
+  lan.send({ type: 'chat', text });
+  input.value = '';
+});
 document.querySelector('#start-exam').addEventListener('click', () => lan.send({ type: 'start_exam' }));
 document.querySelector('#finish-exam').addEventListener('click', () => lan.send({ type: 'finish_exam' }));
 document.querySelector('#exam-form').addEventListener('change', updateExamProgress);
 document.querySelector('#submit-exam').addEventListener('click', () => {
   if (!connected) { toast('Mất kết nối. Hãy chờ kết nối lại rồi nộp bài.'); return; }
-  const answers = Array.from({ length: 5 }, (_, i) => {
+  const answers = Array.from({ length: examQuestionCount }, (_, i) => {
     const selected = document.querySelector(`#exam-form input[name="question-${i}"]:checked`);
     return selected ? Number(selected.value) : null;
   });
-  if (answers.some(answer => answer === null)) { toast('Hãy chọn đáp án cho cả 5 câu trước khi nộp.'); return; }
+  if (answers.some(answer => answer === null)) { toast(`Hãy chọn đáp án cho cả ${examQuestionCount} câu trước khi nộp.`); return; }
   lan.send({ type: 'submit_exam', answers });
   document.querySelector('#submit-exam').disabled = true;
   document.querySelector('#submit-exam').textContent = 'Đang nộp bài…';

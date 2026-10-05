@@ -110,7 +110,13 @@ export function createLanServer({ port = 5174, host = '0.0.0.0' } = {}) {
     if (message.type === 'hello') { handleHello(ws, message); return; }
     const player = players.get(ws.playerId);
     if (!player || player.ws !== ws) return;
-    if (message.type === 'pose') {
+    if (message.type === 'chat') {
+      const text = typeof message.text === 'string' ? message.text.trim().slice(0, 200) : '';
+      const now = Date.now();
+      if (!text || now - (player.lastChatAt || 0) < 300) return;
+      player.lastChatAt = now;
+      broadcast({ type: 'chat', id: player.id, name: player.name, text, sentAt: now, messageId: randomUUID() }, player.roomNo);
+    } else if (message.type === 'pose') {
       if (player.seatId !== null) return;
       const { x, z, rotation } = message;
       if (![x, z, rotation].every(Number.isFinite) || x < -7.82 || x > 7.83 || z < -5.75 || z > 5.86) return;

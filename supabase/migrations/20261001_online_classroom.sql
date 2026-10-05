@@ -28,11 +28,11 @@ create table if not exists public.hcm_exam (
 insert into public.hcm_exam(id) values (1) on conflict (id) do nothing;
 
 create table if not exists public.hcm_exam_questions (
-  position integer primary key check (position between 0 and 4),
+  position integer primary key check (position between 0 and 9),
   id text not null unique,
   source text not null,
   question text not null,
-  options jsonb not null check (jsonb_typeof(options) = 'array' and jsonb_array_length(options) = 4),
+  options jsonb not null check (jsonb_typeof(options) = 'array' and jsonb_array_length(options) between 2 and 4),
   answer integer not null check (answer between 0 and 3)
 );
 
@@ -54,6 +54,36 @@ insert into public.hcm_exam_questions(position, id, source, question, options, a
  jsonb_build_array('Chia sẻ tiếp để nhiều người tự đánh giá.', 'Im lặng vì việc kiểm chứng chỉ thuộc người quản trị.', 'Kiểm chứng bằng nguồn tin cậy, đính chính tôn trọng người khác và rút kinh nghiệm cho lần đăng sau.', 'Công kích người đăng để mọi người chú ý đến vấn đề.'), 2)
 on conflict (position) do update set id = excluded.id, source = excluded.source, question = excluded.question, options = excluded.options, answer = excluded.answer;
 
+insert into public.hcm_exam_questions(position, id, source, question, options, answer) values
+(0, 'culture-origin', 'Bộ câu hỏi HCM202 · Văn hóa và con người',
+ 'Hồ Chí Minh cho rằng: “Vì ... loài người mới sáng tạo và phát minh ra ngôn ngữ, chữ viết, đạo đức, pháp luật, khoa học, tôn giáo, văn học, nghệ thuật, những công cụ cho sinh hoạt hằng ngày về mặc, ăn, ở và các phương thức sử dụng.” Chọn phương án đúng điền vào chỗ trống.',
+ jsonb_build_array('Lẽ sinh tồn cũng như mục đích của cuộc sống', 'Nhu cầu đời sống và tinh thần', 'Mục đích phát triển và sinh tồn', 'Cuộc sống'), 0),
+(1, 'five-culture-points', 'Bộ câu hỏi HCM202 · Văn hóa và con người',
+ 'Nội dung nào đúng về năm điểm lớn định hướng cho việc xây dựng nền văn hóa dân tộc theo tư tưởng Hồ Chí Minh?',
+ jsonb_build_array('Xây dựng luân lý, tâm lý, xã hội, chính trị, kinh tế', 'Xây dựng luân lý, tâm lý, xã hội, chính trị, luật pháp', 'Xây dựng luân lý, tâm lý, xã hội, chính trị, khoa học'), 0),
+(2, 'culture-economy-politics', 'Bộ câu hỏi HCM202 · Văn hóa và con người',
+ 'Theo Hồ Chí Minh, mối quan hệ giữa văn hóa với kinh tế và chính trị như thế nào?',
+ jsonb_build_array('Văn hóa đứng ngoài kinh tế', 'Văn hóa đứng ngoài chính trị', 'Văn hóa không thể đứng ngoài mà phải ở trong kinh tế và chính trị', 'Văn hóa đứng ngoài kinh tế và chính trị'), 2),
+(3, 'culture-goal-motivation', 'Bộ câu hỏi HCM202 · Văn hóa và con người', 'Hồ Chí Minh cho rằng:',
+ jsonb_build_array('Văn hóa vừa là mục tiêu, vừa là động lực của cách mạng', 'Văn hóa vừa là cơ sở, vừa là động lực của cách mạng', 'Văn hóa vừa là mục tiêu, vừa là nhân tố quyết định của cách mạng'), 0),
+(4, 'culture-characteristics', 'Bộ câu hỏi HCM202 · Văn hóa và con người',
+ 'Trong các luận điểm sau đây về văn hóa, luận điểm nào Hồ Chí Minh nói về tính chất của nền văn hóa?',
+ jsonb_build_array('Phải nâng cao trình độ văn hóa của nhân dân', 'Phải xây dựng một nền văn hóa dân tộc, khoa học và đại chúng', 'Văn hóa cũng là một mặt trận', 'Xây dựng chính trị dân quyền'), 1),
+(5, 'culture-functions', 'Bộ câu hỏi HCM202 · Văn hóa và con người', 'Theo tư tưởng Hồ Chí Minh, văn hóa có mấy chức năng chủ yếu?',
+ jsonb_build_array('Hai', 'Ba', 'Bốn', 'Năm'), 1),
+(6, 'human-concept', 'Bộ câu hỏi HCM202 · Văn hóa và con người',
+ 'Nhận định nào sau đây đúng với khái niệm con người trong tư tưởng Hồ Chí Minh?',
+ jsonb_build_array('Dùng để chỉ con người chung chung', 'Dùng để chỉ một cộng đồng người', 'Dùng để chỉ con người cụ thể gắn với hoàn cảnh lịch sử cụ thể', 'Dùng để chỉ con người trừu tượng'), 2),
+(7, 'socialist-human', 'Bộ câu hỏi HCM202 · Văn hóa và con người', 'Theo Hồ Chí Minh, “Muốn xây dựng chủ nghĩa xã hội, trước hết cần có...”',
+ jsonb_build_array('Con người xã hội chủ nghĩa', 'Khoa học xã hội tiên tiến', 'Công nông nghiệp hiện đại', 'Nền kinh tế phát triển'), 0),
+(8, 'planting-people', 'Bộ câu hỏi HCM202 · Văn hóa và con người',
+ 'Theo Hồ Chí Minh, để thực hiện chiến lược “trồng người”, cần có nhiều biện pháp, nhưng biện pháp quan trọng bậc nhất là:',
+ jsonb_build_array('Giáo dục – đào tạo', 'Thuyết phục – nêu gương', 'Cảm hóa – động viên', 'Ép buộc – cưỡng chế'), 0),
+(9, 'new-socialist-human', 'Bộ câu hỏi HCM202 · Văn hóa và con người',
+ 'Theo tư tưởng Hồ Chí Minh, con người mới xã hội chủ nghĩa là con người:',
+ jsonb_build_array('Kế thừa những giá trị tốt đẹp của con người truyền thống', 'Phá bỏ những truyền thống cũ', 'Hình thành những phẩm chất mới xã hội chủ nghĩa', 'Kế thừa những giá trị tốt đẹp của con người truyền thống, hình thành những phẩm chất mới xã hội chủ nghĩa'), 3)
+on conflict (position) do update set id = excluded.id, source = excluded.source, question = excluded.question, options = excluded.options, answer = excluded.answer;
+
 create table if not exists public.hcm_exam_participants (
   round integer not null,
   user_id uuid not null references auth.users(id) on delete cascade,
@@ -64,7 +94,7 @@ create table if not exists public.hcm_exam_participants (
 create table if not exists public.hcm_exam_submissions (
   round integer not null,
   user_id uuid not null,
-  correct integer not null check (correct between 0 and 5),
+  correct integer not null check (correct between 0 and 10),
   duration_ms integer not null check (duration_ms >= 0),
   submitted_at timestamptz not null default clock_timestamp(),
   automatic boolean not null default false,
@@ -144,7 +174,7 @@ begin
   select exists(select 1 from public.hcm_exam_participants where round = v_exam.round and user_id = auth.uid()) into v_eligible;
   select exists(select 1 from public.hcm_exam_submissions where round = v_exam.round and user_id = auth.uid()) into v_submitted;
   select coalesce(jsonb_agg(jsonb_build_object('rank', r.place, 'id', r.user_id::text, 'name', r.name, 'correct', r.correct,
-      'points', r.correct * 20, 'durationMs', r.duration_ms, 'submittedAt', floor(extract(epoch from r.submitted_at) * 1000)::bigint,
+      'points', r.correct * 10, 'durationMs', r.duration_ms, 'submittedAt', floor(extract(epoch from r.submitted_at) * 1000)::bigint,
       'automatic', r.automatic) order by r.place), '[]'::jsonb)
     into v_rankings
   from (
@@ -290,7 +320,7 @@ $$;
 
 create or replace function hcm_private.hcm_submit_exam(p_answers jsonb)
 returns jsonb language plpgsql security definer set search_path = '' as $$
-declare v_exam public.hcm_exam%rowtype; v_index integer; v_correct integer; v_duration integer;
+declare v_exam public.hcm_exam%rowtype; v_index integer; v_correct integer; v_duration integer; v_question_count integer;
 begin
   select * into v_exam from public.hcm_exam where id = 1 for update;
   if v_exam.phase <> 'active' then raise exception 'Bài kiểm tra đã kết thúc.'; end if;
@@ -304,10 +334,11 @@ begin
   if exists(select 1 from public.hcm_exam_submissions where round = v_exam.round and user_id = auth.uid()) then
     return hcm_private.hcm_state();
   end if;
-  if jsonb_typeof(p_answers) is distinct from 'array' or jsonb_array_length(p_answers) <> 5 then
-    raise exception 'Bài làm phải có đúng 5 đáp án.';
+  select count(*) into v_question_count from public.hcm_exam_questions;
+  if jsonb_typeof(p_answers) is distinct from 'array' or jsonb_array_length(p_answers) <> v_question_count then
+    raise exception 'Bài làm phải có đúng % đáp án.', v_question_count;
   end if;
-  for v_index in 0..4 loop
+  for v_index in 0..v_question_count - 1 loop
     if jsonb_typeof(p_answers->v_index) <> 'number' or (p_answers->>v_index) !~ '^[0-3]$' then
       raise exception 'Đáp án không hợp lệ.';
     end if;
