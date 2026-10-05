@@ -380,8 +380,13 @@ function makeCharacter(room) {
       modelContainer.clear();
       modelContainer.add(model);
       const bones = {
-        leftArm: findBones(model, [/^Arm_L_/, /^upper_armL_/, /^j_ude_l_wj_/]),
-        rightArm: findBones(model, [/^Arm_R_/, /^upper_armR_/, /^j_ude_r_wj_/]),
+        // Miku uses j_kata for the upper arm and j_ude for the forearm.
+        // Treating j_ude as the shoulder joint bends the hands up while the
+        // upper arms remain in their imported T-pose.
+        leftArm: findBones(model, [/^Arm_L_\d+$/, /^upper_arm\.L_\d+$/, /^upper_armL_\d+$/, /^j_kata_l_wj_cu_\d+$/]),
+        rightArm: findBones(model, [/^Arm_R_\d+$/, /^upper_arm\.R_\d+$/, /^upper_armR_\d+$/, /^j_kata_r_wj_cu_\d+$/]),
+        leftForearm: findBones(model, [/^Elbow_L_\d+$/, /^forearm\.L_\d+$/, /^forearmL_\d+$/, /^j_ude_l_wj_\d+$/]),
+        rightForearm: findBones(model, [/^Elbow_R_\d+$/, /^forearm\.R_\d+$/, /^forearmR_\d+$/, /^j_ude_r_wj_\d+$/]),
         leftThigh: findBones(model, [/^Thigh_L_/, /^thighL_/, /^j_momo_l_wj_/]),
         rightThigh: findBones(model, [/^Thigh_R_/, /^thighR_/, /^j_momo_r_wj_/]),
         leftKnee: findBones(model, [/^Knee_L_/, /^shinL_/, /^j_sune_l_wj_/]),
@@ -454,9 +459,15 @@ function makeCharacter(room) {
     const { bones, model } = modelRig;
     const idle = Math.sin(now * .0015);
     const blend = 1 - Math.exp(-dt * 12);
-    const armDrop = seated ? 1.18 : 1.05;
-    poseBones(bones.leftArm, swing * .48 + idle * .02, 0, -armDrop, blend);
-    poseBones(bones.rightArm, -swing * .48 - idle * .02, 0, armDrop, blend);
+    const armDrop = seated ? 1.3 : 1.42;
+    const armSwing = walking ? swing * .38 : idle * .025;
+    poseBones(bones.leftArm, armSwing, 0, -armDrop, blend);
+    poseBones(bones.rightArm, -armSwing, 0, armDrop, blend);
+    // Keep the elbows in their natural imported alignment. The shoulder
+    // drives the relaxed pendulum motion, so hands hang beside the body
+    // instead of curling forward into the old T-pose correction.
+    poseBones(bones.leftForearm, 0, 0, 0, blend);
+    poseBones(bones.rightForearm, 0, 0, 0, blend);
     poseBones(bones.leftThigh, seated ? -1.05 : -swing * .5, 0, 0, blend);
     poseBones(bones.rightThigh, seated ? -1.05 : swing * .5, 0, 0, blend);
     poseBones(bones.leftKnee, seated ? 1.28 : Math.max(0, swing) * .3, 0, 0, blend);
