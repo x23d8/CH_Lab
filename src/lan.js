@@ -1,3 +1,5 @@
+import { normalizeAvatarProfile } from './avatar-options.js';
+
 function createToken() {
   const bytes = new Uint8Array(16);
   crypto.getRandomValues(bytes);
@@ -31,8 +33,7 @@ export function createLanClient(onMessage, onStatus) {
   function connect(nextName, nextRoomNo = null, profile = {}) {
     name = nextName.trim();
     roomNo = Number.isInteger(nextRoomNo) && nextRoomNo >= 1 && nextRoomNo <= 9999 ? nextRoomNo : null;
-    gender = profile.gender === 'female' ? 'female' : 'male';
-    avatar = gender === 'female' && profile.avatar === 'female-suzuka' ? 'female-suzuka' : 'male-classic';
+    ({ gender, avatar } = normalizeAvatarProfile(profile.gender, profile.avatar));
     if (!name) return;
     closed = false;
     if (socket?.readyState === WebSocket.OPEN) { send({ type: 'hello', token, name, roomNo, gender, avatar }); return; }

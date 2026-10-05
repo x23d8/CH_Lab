@@ -5,6 +5,7 @@ import { WebSocketServer, WebSocket } from 'ws';
 import { seatPosition, EXAM_MINUTES } from '../src/classroom-config.js';
 import { publicExamQuestions } from './exam-questions.js';
 import { scoreAnswers, rankSubmissions } from './scoring.js';
+import { normalizeAvatarProfile } from '../src/avatar-options.js';
 
 const TEACHER_NAME = 'NHOM3HCM202AI1802';
 const VALID_TOKEN = /^[a-f0-9-]{36}$/i;
@@ -62,8 +63,7 @@ export function createLanServer({ port = 5174, host = '0.0.0.0' } = {}) {
       error(ws, 'Số phòng phải là số nguyên từ 1 đến 9999.'); return;
     }
     const id = typeof message.token === 'string' && VALID_TOKEN.test(message.token) ? message.token : randomUUID();
-    const gender = message.gender === 'female' ? 'female' : 'male';
-    const avatar = gender === 'female' && message.avatar === 'female-suzuka' ? 'female-suzuka' : 'male-classic';
+    const { gender, avatar } = normalizeAvatarProfile(message.gender, message.avatar);
     const wantsTeacher = requestedName === TEACHER_NAME;
     const otherTeacher = teacherId && teacherId !== id && players.get(teacherId)?.connected;
     if (wantsTeacher && otherTeacher) { error(ws, 'Giảng viên đã đăng nhập trên thiết bị khác.'); return; }
@@ -110,6 +110,13 @@ export function createLanServer({ port = 5174, host = '0.0.0.0' } = {}) {
     exam.phase = 'finished';
     broadcastState();
     broadcast({ type: 'exam_finished', round, rankings: rankings() });
+  }
+
+  function resetExam(player) {
+    if (player.role !== 'teacher') { error(player, 'Chỉ giảng viên mới reset được bảng xếp hạng.'); return; }
+    exam = { phase: 'idle', startedAt: null, endsAt: null, eligible: new Set(), submissions: new Map() };
+    broadcast({ type: 'exam_reset', round });
+    broadcastState();
   }
 
   function handleMessage(ws, message) {
@@ -179,6 +186,8 @@ export function createLanServer({ port = 5174, host = '0.0.0.0' } = {}) {
       if (exam.submissions.size === exam.eligible.size) finishExam();
     } else if (message.type === 'finish_exam') {
       if (player.role === 'teacher') finishExam();
+    } else if (message.type === 'reset_exam') {
+      resetExam(player);
     }
   }
 

@@ -1,9 +1,10 @@
 import { createClient } from '@supabase/supabase-js';
+import { normalizeAvatarProfile } from './avatar-options.js';
 
 function friendlyError(error) {
   const message = error?.message || String(error);
   if (/anonymous|signup|signups|disabled/i.test(message)) return 'Supabase chưa bật Anonymous Sign-Ins trong Auth Settings.';
-  if (/hcm_join_profile/i.test(message)) return 'Supabase chưa có hồ sơ avatar. Hãy chạy migration 20261006_avatar_profiles.sql.';
+  if (/hcm_join_profile|hcm_reset_exam/i.test(message)) return 'Supabase chưa có danh sách avatar hoặc chức năng reset. Hãy chạy lại migration 20261006_avatar_profiles.sql.';
   if (/hcm_join_room/i.test(message)) return 'Supabase chưa có cơ chế chọn phòng. Hãy chạy migration 20261005_room_selection.sql.';
   if (/Could not find the function|schema cache|404|hcm_join/i.test(message)) return 'Chưa cài migration SQL cho lớp học trên Supabase.';
   return message;
@@ -77,10 +78,10 @@ export function createSupabaseOnlineClient(url, key, onMessage, onStatus) {
       const meta = metas.at(-1);
       if (!meta || !meta.id) continue;
       const old = peers.get(id);
+      const profile = normalizeAvatarProfile(meta.gender, meta.avatar);
       next.set(id, {
         id: meta.id, name: meta.name, role: meta.role,
-        gender: meta.gender === 'female' ? 'female' : 'male',
-        avatar: meta.avatar === 'female-suzuka' ? 'female-suzuka' : 'male-classic',
+        gender: profile.gender, avatar: profile.avatar,
         seatId: meta.seatId ?? null,
         x: old && old.seatId === (meta.seatId ?? null) ? old.x : meta.x ?? 4.6,
         z: old && old.seatId === (meta.seatId ?? null) ? old.z : meta.z ?? 3.7,
@@ -123,6 +124,9 @@ export function createSupabaseOnlineClient(url, key, onMessage, onStatus) {
     }
     if (previousExam?.phase === 'active' && data.exam.phase === 'finished') {
       onMessage({ type: 'exam_finished', round: data.exam.round, rankings: data.exam.rankings });
+    }
+    if (previousExam && previousExam.phase !== 'idle' && data.exam.phase === 'idle') {
+      onMessage({ type: 'exam_reset', round: data.exam.round });
     }
   }
 
@@ -227,8 +231,7 @@ export function createSupabaseOnlineClient(url, key, onMessage, onStatus) {
       : { gender: desiredGender, avatar: desiredAvatar };
     desiredName = nextName.trim();
     desiredRoom = Number.isInteger(nextRoomNo) && nextRoomNo >= 1 && nextRoomNo <= 9999 ? nextRoomNo : null;
-    desiredGender = profile.gender === 'female' ? 'female' : 'male';
-    desiredAvatar = desiredGender === 'female' && profile.avatar === 'female-suzuka' ? 'female-suzuka' : 'male-classic';
+    ({ gender: desiredGender, avatar: desiredAvatar } = normalizeAvatarProfile(profile.gender, profile.avatar));
     if (!desiredName || joining || stopped) return;
     const wasConnected = connected;
     let joinedRoom = false;
@@ -266,10 +269,7 @@ export function createSupabaseOnlineClient(url, key, onMessage, onStatus) {
       report(error);
       if (wasConnected && !joinedRoom && roomChannel && globalChannel) {
         desiredRoom = roomNo;
-        desiredGender = previousProfile.gender === 'female' ? 'female' : 'male';
-        desiredAvatar = desiredGender === 'female' && previousProfile.avatar === 'female-suzuka'
-          ? 'female-suzuka'
-          : 'male-classic';
+        ({ gender: desiredGender, avatar: desiredAvatar } = normalizeAvatarProfile(previousProfile.gender, previousProfile.avatar));
         connected = true;
         onStatus('online');
       } else {
@@ -300,8 +300,11 @@ export function createSupabaseOnlineClient(url, key, onMessage, onStatus) {
         await trackPresence();
         roomChannel?.send({ type: 'broadcast', event: 'seat-changed', payload: {} });
         broadcastGlobal();
-      } else if (message.type === 'start_exam' || message.type === 'finish_exam') {
-        consumeState(await rpc(message.type === 'start_exam' ? 'hcm_start_exam' : 'hcm_finish_exam'));
+      } else if (message.type === 'start_exam' || message.type === 'finish_exam' || message.type === 'reset_exam') {
+        const functionName = message.type === 'start_exam'
+          ? 'hcm_start_exam'
+          : message.type === 'finish_exam' ? 'hcm_finish_exam' : 'hcm_reset_exam';
+        consumeState(await rpc(functionName));
         broadcastGlobal();
       } else if (message.type === 'submit_exam') {
         consumeState(await rpc('hcm_submit_exam', { p_answers: message.answers }));

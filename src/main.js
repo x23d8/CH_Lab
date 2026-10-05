@@ -6,13 +6,21 @@ import { createClassroom } from './scene.js';
 import { artworks } from './presentation-art.js';
 import { createQuiz } from './quiz.js';
 import { createOnlineClient } from './online.js';
+import { AVATAR_OPTIONS, getAvatarOption, isValidAvatarProfile } from './avatar-options.js';
 
 const sunIcon = `<svg class="sun-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="4.2" fill="#ffd45c"/><path d="M12 1.8v2.1M12 20.1v2.1M1.8 12h2.1M20.1 12h2.1M4.78 4.78l1.49 1.49m11.46 11.46 1.49 1.49m0-14.44-1.49 1.49M6.27 17.73l-1.49 1.49" fill="none" stroke="#e5a929" stroke-width="1.8" stroke-linecap="round"/></svg>`;
+const avatarOptionsMarkup = AVATAR_OPTIONS.map((option, index) => `
+  <label class="avatar-option" style="--avatar-accent:${option.accent}">
+    <input type="radio" name="profile-avatar" value="${option.id}" data-gender="${option.gender}" ${index === 0 ? 'checked' : ''}>
+    <span class="avatar-stage" aria-hidden="true"><span class="avatar-model-preview">${option.name.slice(0, 1)}</span></span>
+    <span class="avatar-option-copy"><strong>${option.name}</strong><small>${option.genderLabel} · ${option.description}</small></span>
+    <span class="avatar-check">✓</span>
+  </label>`).join('');
 
 document.querySelector('#app').innerHTML = `
   <main class="experience">
     <div class="scene-shell">
-      <canvas id="classroom" aria-label="Lớp học 3D tương tác"></canvas>
+      <canvas id="classroom" aria-label="AI Lab 3D tương tác"></canvas>
       <div class="soft-light" aria-hidden="true"></div>
     </div>
 
@@ -20,16 +28,17 @@ document.querySelector('#app').innerHTML = `
       <div class="brand">
         <div class="brand-mark" role="img" aria-label="Quốc kỳ Việt Nam"><svg viewBox="0 0 48 32" aria-hidden="true" focusable="false"><rect width="48" height="32" fill="#da251d"/><polygon points="24,6.6 26.2,13 32.9,13 27.5,17.1 29.5,23.7 24,19.7 18.5,23.7 20.5,17.1 15.1,13 21.8,13" fill="#ffff00"/></svg></div>
         <div>
-          <p class="eyebrow">KHÔNG GIAN KHÁM PHÁ</p>
-          <h1>Lớp học <em>Màu Nắng</em></h1>
+          <p class="eyebrow">KHÔNG GIAN HỌC AI CÓ TRÁCH NHIỆM</p>
+          <h1>AI Lab <em>Tương tác</em></h1>
         </div>
       </div>
       <div class="top-actions">
-        <span class="sunny-pill">${sunIcon}<span>Một ngày nắng thật đẹp</span></span>
+        <span class="sunny-pill">${sunIcon}<span>Học AI bằng tư duy phản biện</span></span>
         <span id="lan-status" class="lan-status" role="status">Chưa vào lớp</span>
         <span id="online-count" class="lan-status online-count" role="status">0 trực tuyến · 0 đã ngồi · Phòng 1</span>
         <button id="chat-button" class="score-button chat-button" type="button" aria-expanded="false" aria-controls="chat-panel" title="Trò chuyện trong phòng"><span class="chat-icon" aria-hidden="true">●</span><span class="chat-label">Trò chuyện</span><span id="chat-unread" class="chat-unread hidden" aria-label="Tin nhắn chưa đọc"></span></button>
         <button id="leaderboard-button" class="score-button" type="button" aria-expanded="false" aria-controls="leaderboard-panel">Bảng điểm</button>
+        <button id="profile-button" class="icon-button" type="button" title="Đổi avatar" aria-label="Đổi avatar"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" aria-hidden="true"><circle cx="12" cy="8" r="3.5" fill="currentColor"/><path d="M5.5 19c.7-4 3-6 6.5-6s5.8 2 6.5 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
         <button id="reset-view" class="icon-button" type="button" title="Đặt lại góc nhìn" aria-label="Đặt lại góc nhìn">↺</button>
         <button id="help-button" class="icon-button help-button" type="button" title="Hướng dẫn" aria-label="Hướng dẫn">?</button>
       </div>
@@ -40,6 +49,7 @@ document.querySelector('#app').innerHTML = `
         <span id="teacher-exam-status">Chờ sinh viên ngồi vào ghế</span>
         <button id="start-exam" type="button">Mở kiểm tra 15 phút</button>
         <button id="finish-exam" class="hidden" type="button">Kết thúc &amp; chấm bài</button>
+        <button id="reset-exam" class="hidden" type="button">Reset bảng xếp hạng</button>
       </section>
       <section id="chat-panel" class="chat-panel hidden" aria-label="Trò chuyện trong phòng">
         <div class="panel-heading"><span>TRÒ CHUYỆN · PHÒNG <b id="chat-room">1</b></span><button id="close-chat" type="button" aria-label="Đóng trò chuyện">×</button></div>
@@ -67,10 +77,10 @@ document.querySelector('#app').innerHTML = `
       <div class="profile-backdrop"></div>
       <article class="profile-card" role="dialog" aria-modal="true" aria-labelledby="profile-title">
         <div class="profile-copy">
-          <p class="section-label">THẺ VÀO LỚP · HCM202</p>
-          <h2 id="profile-title">Bạn sẽ bước vào lớp với hình dáng nào?</h2>
-          <p>Đặt tên, chọn nhân vật và phòng học. Thông tin này sẽ xuất hiện với mọi người trong cùng phòng.</p>
-          <div class="profile-note"><span>✦</span><span>Avatar nữ dùng model 3D có xương chuyển động; avatar nam giữ phong cách Màu Nắng hiện tại.</span></div>
+          <p class="section-label">THẺ VÀO AI LAB</p>
+          <h2 id="profile-title">Chọn nhân vật để bước vào phòng học AI</h2>
+          <p>Đặt tên, chọn nhân vật và phòng học. Hồ sơ sẽ xuất hiện với mọi người trong cùng phòng.</p>
+          <div class="profile-note"><span>✦</span><span>Mỗi model có chuyển động đứng yên, đi bộ và ngồi. Bạn có thể đổi lại nhân vật bất cứ lúc nào.</span></div>
         </div>
         <form id="profile-form" class="profile-form" autocomplete="off">
           <div class="profile-fields">
@@ -79,34 +89,23 @@ document.querySelector('#app').innerHTML = `
           </div>
           <fieldset class="avatar-picker">
             <legend>Chọn giới tính và avatar</legend>
-            <label class="avatar-option avatar-option-male">
-              <input type="radio" name="profile-avatar" value="male-classic" data-gender="male" checked>
-              <span class="avatar-stage" aria-hidden="true"><span class="avatar-figure male-figure"><i></i><b></b><em></em></span></span>
-              <span class="avatar-option-copy"><strong>Nam</strong><small>Đồng phục xanh · phong cách hiện tại</small></span>
-              <span class="avatar-check">✓</span>
-            </label>
-            <label class="avatar-option avatar-option-female">
-              <input type="radio" name="profile-avatar" value="female-suzuka" data-gender="female">
-              <span class="avatar-stage" aria-hidden="true"><span class="avatar-figure female-figure"><i></i><b></b><em></em></span></span>
-              <span class="avatar-option-copy"><strong>Nữ</strong><small>Model 3D chibi · chuyển động xương</small></span>
-              <span class="avatar-check">✓</span>
-            </label>
+            <div class="avatar-options" id="avatar-options">${avatarOptionsMarkup}</div>
           </fieldset>
           <p id="profile-error" class="profile-error hidden" role="alert"></p>
-          <button class="profile-enter" type="submit">Vào lớp học <span>→</span></button>
+          <button class="profile-enter" type="submit">Vào AI Lab <span>→</span></button>
         </form>
       </article>
     </div>
 
     <div class="floating-info floating-intro">
       <button id="intro-toggle" class="bubble-trigger" type="button" aria-expanded="false" aria-controls="intro-card">
-        <span class="bubble-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" focusable="false"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.7"/><path d="m15.8 8.2-2.3 5.3-5.3 2.3 2.3-5.3 5.3-2.3Z" fill="currentColor"/><circle cx="12" cy="12" r="1" fill="#fff9df"/></svg></span><span>Khám phá lớp</span>
+        <span class="bubble-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" focusable="false"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.7"/><path d="m15.8 8.2-2.3 5.3-5.3 2.3 2.3-5.3 5.3-2.3Z" fill="currentColor"/><circle cx="12" cy="12" r="1" fill="#fff9df"/></svg></span><span>Khám phá AI Lab</span>
       </button>
       <section id="intro-card" class="intro-card bubble-content hidden" aria-label="Giới thiệu lớp học">
         <span class="small-star">✳</span>
-        <p class="section-label">CHÀO MỪNG BẠN ĐẾN LỚP</p>
-        <p>Hãy dạo một vòng, tìm những bức tranh và khám phá câu chuyện phía sau mỗi khung hình.</p>
-        <div class="art-count"><span class="count-dot"></span><strong>08</strong> bức tranh đang chờ bạn</div>
+        <p class="section-label">CHÀO MỪNG BẠN ĐẾN AI LAB</p>
+        <p>Khám phá tám chủ đề về cách AI hoạt động, cách kiểm chứng đầu ra và cách sử dụng công nghệ có trách nhiệm.</p>
+        <div class="art-count"><span class="count-dot"></span><strong>08</strong> chủ đề AI đang chờ bạn</div>
       </section>
     </div>
 
@@ -116,7 +115,7 @@ document.querySelector('#app').innerHTML = `
       <button id="inspect-button" type="button"><span id="nearby-action">Xem tranh</span> <kbd>E</kbd></button>
     </div>
 
-    <p class="scene-caption"><span class="caption-line"></span> Một góc nhỏ dành cho trí tò mò <span>✳</span></p>
+    <p class="scene-caption"><span class="caption-line"></span> AI hữu ích khi con người hiểu và kiểm chứng <span>✳</span></p>
 
     <div class="mobile-pad" aria-label="Joystick di chuyển" role="group">
       <div class="joystick" aria-label="Kéo để di chuyển theo mọi hướng">
@@ -130,12 +129,12 @@ document.querySelector('#app').innerHTML = `
         <button class="close-button" id="close-modal" type="button" aria-label="Đóng">×</button>
         <div class="art-preview"><img id="art-image" alt="" /></div>
         <div class="art-copy">
-          <p class="section-label">BỨC TRANH TRONG LỚP <span>✦</span> <span id="art-category"></span></p>
+          <p class="section-label">CHỦ ĐỀ AI TRONG LỚP <span>✦</span> <span id="art-category"></span></p>
           <h2 id="art-title"></h2>
           <p id="art-note"></p>
           <ul id="art-points" class="art-points"></ul>
-          <p id="art-source" class="art-source"></p>
-          <div class="art-footer"><span>Nhìn kỹ hơn một chút nhé!</span><button id="next-art" type="button">Tranh tiếp theo →</button></div>
+          <a id="art-source" class="art-source" target="_blank" rel="noopener noreferrer"></a>
+          <div class="art-footer"><span>Hiểu kỹ rồi mới dùng AI nhé!</span><button id="next-art" type="button">Chủ đề tiếp theo →</button></div>
         </div>
       </article>
     </div>
@@ -145,9 +144,9 @@ document.querySelector('#app').innerHTML = `
       <article class="help-dialog" role="dialog" aria-modal="true" aria-labelledby="help-title">
         <button class="close-button" id="close-help" type="button" aria-label="Đóng">×</button>
         <span class="help-sun">${sunIcon}</span>
-        <p class="section-label">BẮT ĐẦU KHÁM PHÁ</p>
-        <h2 id="help-title">Cứ đi theo trí tò mò!</h2>
-        <p>Dùng <strong>W A S D</strong> hoặc các phím mũi tên để điều khiển nhân vật; trên điện thoại, kéo joystick để di chuyển theo mọi hướng. Kéo chuột để đổi góc nhìn và cuộn để phóng to. Nhấp vào tranh để xem nội dung; nhấp vào TV trên kệ sách để chơi quiz. Khi tới gần, bạn cũng có thể nhấn <strong>E</strong>.</p>
+        <p class="section-label">BẮT ĐẦU KHÁM PHÁ AI LAB</p>
+        <h2 id="help-title">Học bằng cách quan sát và kiểm chứng</h2>
+        <p>Dùng <strong>W A S D</strong> hoặc các phím mũi tên để điều khiển nhân vật; trên điện thoại, kéo joystick để di chuyển theo mọi hướng. Kéo chuột để đổi góc nhìn và cuộn để phóng to. Nhấp vào tranh để học từng chủ đề AI; nhấp vào TV trên kệ sách để chơi quiz. Khi tới gần, bạn cũng có thể nhấn <strong>E</strong>.</p>
         <div class="lan-name-form">
           <label>Hồ sơ trong lớp</label>
           <div class="profile-summary"><span id="profile-summary">Chưa chọn nhân vật</span><button id="edit-profile" type="button">Đổi hồ sơ</button></div>
@@ -167,9 +166,9 @@ document.querySelector('#app').innerHTML = `
           <img id="quiz-bird" class="quiz-bird" src="/flappy/yellowbird-midflap.png" alt="">
         </div>
         <div class="quiz-body">
-          <p class="section-label">TV TRÊN KỆ SÁCH · HCM202</p>
-          <h2 id="quiz-title">Bay qua câu hỏi</h2>
-          <p class="quiz-intro">Chọn đáp án để đưa chú chim qua từng cánh cổng kiến thức.</p>
+          <p class="section-label">TV AI LAB · QUIZ NHANH</p>
+          <h2 id="quiz-title">Bay qua thế giới AI</h2>
+          <p class="quiz-intro">Chọn đáp án để đưa chú chim qua từng cánh cổng kiến thức AI.</p>
           <div id="quiz-play">
             <div class="quiz-meta"><span id="quiz-number"></span><span id="quiz-score"></span></div>
             <h3 id="quiz-question"></h3>
@@ -191,7 +190,7 @@ document.querySelector('#app').innerHTML = `
       <div class="modal-backdrop"></div>
       <article class="exam-dialog" role="dialog" aria-modal="true" aria-labelledby="exam-title">
         <header class="exam-paper-header">
-          <div><p class="section-label">HCM202 · BÀI KIỂM TRA VẬN DỤNG</p><h2 id="exam-title">Văn hóa và con người trong tư tưởng Hồ Chí Minh</h2><span id="exam-subtitle">10 câu trắc nghiệm · 15 phút</span></div>
+          <div><p class="section-label">AI LAB · BÀI KIỂM TRA VẬN DỤNG</p><h2 id="exam-title">Hiểu và sử dụng AI có trách nhiệm</h2><span id="exam-subtitle">10 câu trắc nghiệm · 15 phút</span></div>
           <strong id="exam-timer" aria-live="off">15:00</strong>
         </header>
         <div class="exam-scroll"><form id="exam-form"></form></div>
@@ -226,6 +225,17 @@ let toastTimer = null;
 let chatMessages = [];
 let chatUnread = 0;
 const CHAT_MEMORY_LIMIT = 60;
+
+function genderLabel(gender) {
+  return gender === 'female' ? 'Nữ' : gender === 'other' ? 'Linh vật' : 'Nam';
+}
+
+function selectAvatarInput(avatar) {
+  const option = getAvatarOption(avatar);
+  const input = document.querySelector(`input[name="profile-avatar"][value="${option.id}"]`);
+  if (input) input.checked = true;
+  return option;
+}
 
 function toast(message) {
   const element = document.querySelector('#online-toast');
@@ -334,6 +344,9 @@ function updateTeacherControls(state) {
     : `${seated} sinh viên đang ngồi ở tất cả phòng · ${exam?.phase === 'finished' ? 'đã chấm xong' : 'chờ mở bài'}`;
   document.querySelector('#start-exam').disabled = !connected || !seated || exam?.phase === 'active';
   document.querySelector('#finish-exam').classList.toggle('hidden', exam?.phase !== 'active');
+  const reset = document.querySelector('#reset-exam');
+  reset.classList.toggle('hidden', !exam || exam.phase === 'idle');
+  reset.disabled = !connected;
 }
 
 function updateSeatStatus(state) {
@@ -379,8 +392,7 @@ function showExam(message) {
   form.replaceChildren(...message.questions.map((question, index) => {
     const fieldset = document.createElement('fieldset'); fieldset.className = 'exam-question';
     const legend = document.createElement('legend'); legend.textContent = `Câu ${index + 1}. ${question.question}`;
-    const source = document.createElement('small'); source.textContent = question.source;
-    fieldset.append(legend, source);
+    fieldset.append(legend);
     question.options.forEach((option, choice) => {
       const label = document.createElement('label'); label.className = 'exam-choice';
       const input = document.createElement('input'); input.type = 'radio'; input.name = `question-${index}`; input.value = String(choice);
@@ -412,10 +424,13 @@ function handleOnlineMessage(message) {
     if (selfId && nextRoomNo !== roomNo) { roomNo = nextRoomNo; clearChat(); }
     else roomNo = nextRoomNo;
     selfId = message.id; role = message.role;
-    const gender = message.gender === 'female' ? 'female' : 'male';
-    const avatar = message.avatar === 'female-suzuka' ? 'female-suzuka' : 'male-classic';
+    const selectedAvatar = selectAvatarInput(message.avatar);
+    const gender = selectedAvatar.gender;
+    const avatar = selectedAvatar.id;
+    localStorage.setItem('hcm202-gender', gender);
+    localStorage.setItem('hcm202-avatar', avatar);
     classroom?.setProfile({ name: message.name, gender, avatar });
-    document.querySelector('#profile-summary').textContent = `${message.name} · ${gender === 'female' ? 'Nữ' : 'Nam'} · Phòng ${roomNo}`;
+    document.querySelector('#profile-summary').textContent = `${message.name} · ${selectedAvatar.name} · ${genderLabel(gender)} · Phòng ${roomNo}`;
     document.querySelector('#chat-room').textContent = String(roomNo);
     updateLanStatus('online');
     toast(role === 'teacher' ? 'Đã vào lớp với vai trò giảng viên.' : `Chào ${message.name}, bạn đã vào phòng ${roomNo}.`);
@@ -441,6 +456,11 @@ function handleOnlineMessage(message) {
   } else if (message.type === 'exam_finished') {
     if (examOpen) { hideExam(); toast('Hết giờ kiểm tra. Bài chưa nộp đã được chấm tự động.'); }
     showLeaderboard(true);
+  } else if (message.type === 'exam_reset') {
+    if (examOpen) hideExam();
+    updateLeaderboard({ phase: 'idle', rankings: [], participantCount: 0, submittedCount: 0 });
+    showLeaderboard(false);
+    toast('Đã reset bài kiểm tra và bảng xếp hạng.');
   } else if (message.type === 'error') {
     if (examOpen) {
       document.querySelector('#submit-exam').disabled = false;
@@ -494,7 +514,9 @@ function openArtwork(artwork) {
   document.querySelector('#art-title').textContent = artwork.title;
   document.querySelector('#art-category').textContent = artwork.category;
   document.querySelector('#art-note').textContent = artwork.note;
-  document.querySelector('#art-source').textContent = artwork.source;
+  const source = document.querySelector('#art-source');
+  source.textContent = `Nguồn chính thức: ${artwork.sourceLabel}`;
+  source.href = artwork.sourceUrl;
   const points = document.querySelector('#art-points');
   points.replaceChildren(...artwork.points.map(point => {
     const item = document.createElement('li');
@@ -547,12 +569,13 @@ classroom = createClassroom(document.querySelector('#classroom'), {
 const savedName = localStorage.getItem('hcm202-player-name') || `Sinh viên ${Math.floor(Math.random() * 900 + 100)}`;
 const savedRoomValue = Number(localStorage.getItem('hcm202-room-no'));
 const savedRoom = Number.isInteger(savedRoomValue) && savedRoomValue >= 1 && savedRoomValue <= 9999 ? savedRoomValue : null;
-const savedAvatar = localStorage.getItem('hcm202-avatar') === 'female-suzuka' ? 'female-suzuka' : 'male-classic';
-const savedGender = savedAvatar === 'female-suzuka' ? 'female' : 'male';
+const savedProfile = getAvatarOption(localStorage.getItem('hcm202-avatar'));
+const savedAvatar = savedProfile.id;
+const savedGender = savedProfile.gender;
 document.querySelector('#profile-name').value = savedName;
 document.querySelector('#profile-room').value = savedRoom ?? '';
-document.querySelector(`input[name="profile-avatar"][value="${savedAvatar}"]`).checked = true;
-document.querySelector('#profile-summary').textContent = `${savedName} · ${savedGender === 'female' ? 'Nữ' : 'Nam'}${savedRoom ? ` · Phòng ${savedRoom}` : ''}`;
+selectAvatarInput(savedAvatar);
+document.querySelector('#profile-summary').textContent = `${savedName} · ${savedProfile.name} · ${genderLabel(savedGender)}${savedRoom ? ` · Phòng ${savedRoom}` : ''}`;
 classroom.setProfile({ name: savedName, gender: savedGender, avatar: savedAvatar });
 classroom.setActive(false);
 window.addEventListener('pagehide', event => { if (!event.persisted) lan.stop(); });
@@ -564,6 +587,7 @@ document.querySelector('#close-help').addEventListener('click', closeModals);
 document.querySelector('#close-quiz').addEventListener('click', closeModals);
 document.querySelector('#start-exploring').addEventListener('click', closeModals);
 document.querySelector('#edit-profile').addEventListener('click', openProfileEditor);
+document.querySelector('#profile-button').addEventListener('click', openProfileEditor);
 document.querySelector('#profile-form').addEventListener('submit', event => {
   event.preventDefault();
   const name = document.querySelector('#profile-name').value.trim();
@@ -576,7 +600,7 @@ document.querySelector('#profile-form').addEventListener('submit', event => {
   let errorMessage = '';
   if (!name) errorMessage = 'Hãy nhập tên của bạn.';
   else if (nextRoomNo !== null && (!Number.isInteger(nextRoomNo) || nextRoomNo < 1 || nextRoomNo > 9999)) errorMessage = 'Số phòng phải là số nguyên từ 1 đến 9999.';
-  else if (!['male-classic', 'female-suzuka'].includes(avatar) || !['male', 'female'].includes(gender)) errorMessage = 'Hãy chọn một nhân vật.';
+  else if (!isValidAvatarProfile(gender, avatar)) errorMessage = 'Hãy chọn một nhân vật.';
   error.textContent = errorMessage;
   error.classList.toggle('hidden', !errorMessage);
   if (errorMessage) return;
@@ -586,7 +610,8 @@ document.querySelector('#profile-form').addEventListener('submit', event => {
   if (nextRoomNo === null) localStorage.removeItem('hcm202-room-no');
   else localStorage.setItem('hcm202-room-no', String(nextRoomNo));
   classroom.setProfile({ name, gender, avatar });
-  document.querySelector('#profile-summary').textContent = `${name} · ${gender === 'female' ? 'Nữ' : 'Nam'}${nextRoomNo ? ` · Phòng ${nextRoomNo}` : ''}`;
+  const selectedAvatar = getAvatarOption(avatar);
+  document.querySelector('#profile-summary').textContent = `${name} · ${selectedAvatar.name} · ${genderLabel(gender)}${nextRoomNo ? ` · Phòng ${nextRoomNo}` : ''}`;
   profileModal.classList.add('hidden'); profileModal.setAttribute('aria-hidden', 'true');
   classroom.setActive(true);
   lan.connect(name, nextRoomNo, { gender, avatar });
@@ -607,6 +632,7 @@ document.querySelector('#chat-form').addEventListener('submit', event => {
 });
 document.querySelector('#start-exam').addEventListener('click', () => lan.send({ type: 'start_exam' }));
 document.querySelector('#finish-exam').addEventListener('click', () => lan.send({ type: 'finish_exam' }));
+document.querySelector('#reset-exam').addEventListener('click', () => lan.send({ type: 'reset_exam' }));
 document.querySelector('#exam-form').addEventListener('change', updateExamProgress);
 document.querySelector('#submit-exam').addEventListener('click', () => {
   if (!connected) { toast('Mất kết nối. Hãy chờ kết nối lại rồi nộp bài.'); return; }

@@ -7,8 +7,8 @@ import { createLanServer } from './lan.js';
 import { rankSubmissions, scoreAnswers } from './scoring.js';
 
 test('chấm theo số câu đúng rồi thời gian hoàn thành', () => {
-  assert.equal(scoreAnswers([0, 0, 2, 0, 1, 1, 2, 0, 0, 3]), 10);
-  assert.equal(scoreAnswers([1, 1, 2, 0, 1, 1, 2, 0, 0, 3]), 8);
+  assert.equal(scoreAnswers([1, 2, 1, 0, 1, 2, 1, 1, 0, 3]), 10);
+  assert.equal(scoreAnswers([0, 0, 1, 0, 1, 2, 1, 1, 0, 3]), 8);
   const ranked = rankSubmissions([
     { id: 'b', name: 'B', correct: 8, durationMs: 2000, submittedAt: 2000 },
     { id: 'a', name: 'A', correct: 10, durationMs: 7000, submittedAt: 7000 },
@@ -106,12 +106,17 @@ test('hai sinh viên ngồi, giảng viên mở đề và máy chủ xếp hạn
   assert.equal(firstExam.questions[0].answer, undefined);
   assert.equal(secondExam.endsAt - secondExam.startedAt, 15 * 60_000);
 
-  second.send({ type: 'submit_exam', answers: [1, 1, 2, 0, 1, 1, 2, 0, 0, 3] });
+  second.send({ type: 'submit_exam', answers: [0, 0, 1, 0, 1, 2, 1, 1, 0, 3] });
   await second.wait('exam_result');
-  first.send({ type: 'submit_exam', answers: [0, 0, 2, 0, 1, 1, 2, 0, 0, 3] });
+  first.send({ type: 'submit_exam', answers: [1, 2, 1, 0, 1, 2, 1, 1, 0, 3] });
   const done = await teacher.wait('exam_finished');
   assert.equal(done.rankings[0].name, 'An');
   assert.equal(done.rankings[0].points, 100);
   assert.equal(done.rankings[1].name, 'Bình');
   assert.equal(done.rankings[1].points, 80);
+  teacher.send({ type: 'reset_exam' });
+  await first.wait('exam_reset');
+  const resetState = await teacher.wait('state', state => state.exam?.round === 1 && state.exam.phase === 'idle');
+  assert.equal(resetState.exam.participantCount, 0);
+  assert.deepEqual(resetState.exam.rankings, []);
 });

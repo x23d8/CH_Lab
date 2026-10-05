@@ -1,272 +1,138 @@
 const lessons = [
   {
-    title: 'Văn hóa ⇄ Con người', category: 'Luận điểm trung tâm', theme: 'cycle',
-    note: 'Con người sáng tạo văn hóa; văn hóa định hướng và bồi dưỡng con người. Khi phát triển, con người lại tiếp tục làm giàu đời sống văn hóa.',
-    points: ['Quan hệ này diễn ra theo hai chiều.', 'Xây dựng văn hóa bắt đầu từ xây dựng con người toàn diện.'],
-    slide: '02', source: 'Slide 2 · Giáo trình Tư tưởng Hồ Chí Minh 2019, Chương VI',
+    title: 'AI trong lớp học', category: 'Con người làm chủ công nghệ', theme: 'classroom', poster: 'AI + LEARNING',
+    note: 'AI có thể hỗ trợ học tập, nhưng mục tiêu, quyết định và trách nhiệm vẫn thuộc về con người.',
+    points: ['Dùng AI để gợi ý, giải thích và luyện tập.', 'Tự suy nghĩ trước khi chấp nhận câu trả lời.', 'Giảng viên và sinh viên cùng đặt quy tắc sử dụng rõ ràng.'],
+    sourceLabel: 'UNESCO · Trí tuệ nhân tạo trong giáo dục', sourceUrl: 'https://www.unesco.org/en/digital-education/artificial-intelligence',
   },
   {
-    title: 'Văn hóa trong đời sống', category: 'Khái niệm', theme: 'scope',
-    note: 'Văn hóa rộng hơn văn nghệ: hiện diện trong phương thức sinh hoạt, đời sống tinh thần, giáo dục và cách con người dùng công cụ.',
-    points: ['Nghĩa rộng: những sáng tạo và phương thức sinh hoạt.', 'Nghĩa hẹp: đời sống tinh thần của xã hội.', 'Giáo dục và công cụ cũng là những góc nhìn về văn hóa.'],
-    slide: '03', source: 'Slide 3 · Giáo trình 2019, tr. 119–120',
+    title: 'Năng lực AI của sinh viên', category: 'Hiểu · Dùng · Sáng tạo', theme: 'competency', poster: 'HUMAN  ETHICS  TECH  DESIGN',
+    note: 'Năng lực AI gồm tư duy lấy con người làm trung tâm, đạo đức, kỹ thuật ứng dụng và thiết kế hệ thống.',
+    points: ['Hiểu AI có thể và không thể làm gì.', 'Áp dụng AI đúng bối cảnh và có trách nhiệm.', 'Sáng tạo giải pháp nhưng vẫn giữ quyền kiểm soát của con người.'],
+    sourceLabel: 'UNESCO · Khung năng lực AI cho học sinh, sinh viên', sourceUrl: 'https://www.unesco.org/en/articles/ai-competency-framework-students?hub=84624',
   },
   {
-    title: 'Có gốc để hội nhập', category: 'Văn hóa và xã hội', theme: 'roots',
-    note: 'Văn hóa gắn với chính trị, kinh tế và xã hội. Giữ bản sắc dân tộc đi cùng việc tiếp thu có chọn lọc tinh hoa của nhân loại.',
-    points: ['Kinh tế tạo điều kiện vật chất; văn hóa tác động trở lại bằng tri thức, kỷ luật và đạo đức.', 'Bản sắc và hội nhập có thể cùng phát triển.'],
-    slide: '04', source: 'Slide 4 · Giáo trình 2019, tr. 120–122',
+    title: 'AI học từ dữ liệu', category: 'Dữ liệu và mô hình', theme: 'data', poster: 'DATA  >  MODEL  >  CHECK',
+    note: 'Mô hình AI tìm quy luật trong dữ liệu. Chất lượng dữ liệu ảnh hưởng trực tiếp đến độ chính xác và tính công bằng của kết quả.',
+    points: ['Dữ liệu thiếu hoặc lệch có thể tạo kết quả sai lệch.', 'Kết quả tốt trong bài thử chưa chắc đúng ở mọi tình huống.', 'Luôn kiểm tra mô hình với dữ liệu phù hợp mục đích sử dụng.'],
+    sourceLabel: 'NIST · Nền tảng và đo lường AI', sourceUrl: 'https://www.nist.gov/fundamental-ai',
   },
   {
-    title: 'Bốn vai trò của văn hóa', category: 'Giá trị và hành động', theme: 'roles',
-    note: 'Văn hóa là mục tiêu, động lực, một mặt trận và phải phục vụ nhân dân. Giá trị văn hóa cần đi vào đời sống thực.',
-    points: ['Mục tiêu: hướng tới đời sống tốt đẹp.', 'Động lực: khơi dậy tri thức, phẩm giá và sáng tạo.', 'Mặt trận: bồi đắp cái tốt, khắc phục cái lạc hậu.', 'Phục vụ nhân dân: xuất phát từ đời sống và nâng cao đời sống.'],
-    slide: '05', source: 'Slide 5 · Giáo trình 2019, tr. 122–124',
+    title: 'AI tạo sinh có kiểm chứng', category: 'Hỏi rõ · Kiểm tra kỹ', theme: 'verify', poster: 'PROMPT  >  OUTPUT  >  VERIFY',
+    note: 'AI tạo sinh có thể viết nội dung thuyết phục nhưng vẫn có thể bịa dữ kiện, thiếu ngữ cảnh hoặc dẫn nguồn không tồn tại.',
+    points: ['Viết yêu cầu có mục tiêu và bối cảnh rõ.', 'Đối chiếu dữ kiện bằng nguồn đáng tin cậy.', 'Nêu rõ phần nào có AI hỗ trợ khi quy định yêu cầu.'],
+    sourceLabel: 'UNESCO · Hướng dẫn AI tạo sinh trong giáo dục', sourceUrl: 'https://www.unesco.org/en/articles/guidance-generative-ai-education-and-research?hub=394',
   },
   {
-    title: 'Nền văn hóa mới', category: 'Ba tính chất', theme: 'three',
-    note: 'Nền văn hóa mới được khái quát bằng ba tính chất: dân tộc, khoa học và đại chúng.',
-    points: ['Dân tộc: giữ bản sắc và năng lực tự chủ.', 'Khoa học: tiến bộ, có căn cứ, chống lạc hậu.', 'Đại chúng: do nhân dân xây dựng và phục vụ nhân dân.'],
-    slide: '06', source: 'Slide 6 · Giáo trình 2019, tr. 124–125',
+    title: 'AI đáng tin cậy', category: 'An toàn và trách nhiệm', theme: 'trust', poster: 'SAFE  FAIR  PRIVATE  CLEAR',
+    note: 'Một hệ thống AI đáng tin cậy cần chính xác trong bối cảnh sử dụng, an toàn, minh bạch, bảo vệ riêng tư và giảm thiên lệch có hại.',
+    points: ['Không nhập dữ liệu cá nhân hoặc bí mật khi chưa được phép.', 'Tìm dấu hiệu thiên lệch giữa các nhóm người dùng.', 'Cần biết giới hạn và lý do đằng sau quyết định quan trọng.'],
+    sourceLabel: 'NIST · AI đáng tin cậy và có trách nhiệm', sourceUrl: 'https://www.nist.gov/trustworthy-and-responsible-ai',
   },
   {
-    title: 'Con người toàn diện', category: 'Quan niệm về con người', theme: 'whole',
-    note: 'Con người là con người cụ thể trong gia đình, nhà trường, cộng đồng và xã hội; phát triển cả trí lực, tâm lực và thể lực.',
-    points: ['Không chỉ đánh giá bằng một phẩm chất hay một kỹ năng.', 'Điều kiện sống và các quan hệ xã hội góp phần hình thành hành vi.'],
-    slide: '07', source: 'Slide 7 · Giáo trình 2019, tr. 138–139',
+    title: 'Quản trị rủi ro AI', category: 'Bốn bước liên tục', theme: 'risk', poster: 'GOVERN  MAP  MEASURE  MANAGE',
+    note: 'Khung quản trị rủi ro AI của NIST tổ chức công việc thành bốn chức năng liên kết: Govern, Map, Measure và Manage.',
+    points: ['Govern: phân công trách nhiệm và nguyên tắc.', 'Map: hiểu bối cảnh, người bị ảnh hưởng và rủi ro.', 'Measure và Manage: đo, ưu tiên rồi xử lý rủi ro.'],
+    sourceLabel: 'NIST · Khung quản trị rủi ro AI', sourceUrl: 'https://www.nist.gov/itl/ai-risk-management-framework',
   },
   {
-    title: 'Mục tiêu và động lực', category: 'Hai chiều phát triển', theme: 'people',
-    note: 'Con người là mục tiêu vì phát triển hướng đến tự do, hạnh phúc; đồng thời là động lực vì nhân dân chủ động lao động và sáng tạo.',
-    points: ['Phát triển vì con người.', 'Phát triển bằng sức người.'],
-    slide: '08', source: 'Slide 8 · Giáo trình 2019, tr. 139–140',
+    title: 'AI vì sức khỏe con người', category: 'Đạo đức trong thực tế', theme: 'health', poster: 'HUMAN + AI  /  HEALTH',
+    note: 'AI có thể hỗ trợ y tế, nhưng phải bảo vệ quyền tự chủ, sự an toàn, riêng tư và lợi ích của người bệnh.',
+    points: ['Chuyên gia chịu trách nhiệm cho quyết định cuối cùng.', 'Dữ liệu sức khỏe cần được bảo vệ nghiêm ngặt.', 'Lợi ích và rủi ro phải được đánh giá cho từng nhóm người.'],
+    sourceLabel: 'WHO · Đạo đức và quản trị AI cho sức khỏe', sourceUrl: 'https://www.who.int/publications/i/item/9789240029200',
   },
   {
-    title: 'Trồng người từ việc nhỏ', category: 'Vận dụng với sinh viên', theme: 'planting',
-    note: '“Trồng người” là công việc lâu dài: phẩm chất và năng lực cùng phát triển, bắt đầu từ những hành vi học tập có thể kiểm chứng.',
-    points: ['Học có nguồn và kiểm chứng thông tin.', 'Nói có trách nhiệm, giao tiếp tôn trọng.', 'Làm có kỷ luật, minh bạch khi dùng AI.', 'Dùng năng lực để góp ích cho cộng đồng.'],
-    slide: '09–10', source: 'Slide 9–10 · Giáo trình 2019, tr. 140–144',
+    title: 'AI trong khoa học không gian', category: 'Từ dữ liệu đến khám phá', theme: 'space', poster: 'AI FOR SCIENCE  /  NASA',
+    note: 'NASA dùng AI để phân tích ảnh vệ tinh, tìm mẫu trong dữ liệu khoa học và hỗ trợ phương tiện tự hành khám phá những nơi xa xôi.',
+    points: ['AI giúp xử lý lượng dữ liệu lớn nhanh hơn.', 'Xe tự hành cần thích nghi khi tín hiệu điều khiển bị trễ.', 'Nhà khoa học vẫn kiểm tra và diễn giải kết quả.'],
+    sourceLabel: 'NASA · Artificial Intelligence', sourceUrl: 'https://www.nasa.gov/artificial-intelligence/',
   },
 ];
 
-const colors = {
-  ink: '#426d70', dark: '#355f65', mint: '#65a988', mintLight: '#b4d9b9',
-  yellow: '#f3c85c', coral: '#df816d', blue: '#81bdd0', cream: '#fff7df',
+const palette = {
+  ink: '#163d55', navy: '#102f46', blue: '#63b7d5', mint: '#7bc5aa', yellow: '#ffd166',
+  coral: '#f07f72', cream: '#fff9e8', white: '#ffffff', purple: '#8d86d8',
 };
-
-function fill(c, color) { c.fillStyle = color; }
-function stroke(c, color, width = 4) { c.strokeStyle = color; c.lineWidth = width; c.lineCap = 'round'; c.lineJoin = 'round'; }
-function circle(c, x, y, r, color) { c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); fill(c, color); c.fill(); }
-function roundRect(c, x, y, w, h, r, color) { c.beginPath(); c.roundRect(x, y, w, h, r); fill(c, color); c.fill(); }
-function line(c, points, color, width = 4) { c.beginPath(); c.moveTo(...points[0]); points.slice(1).forEach(p => c.lineTo(...p)); stroke(c, color, width); c.stroke(); }
-function text(c, value, x, y, size = 38, color = colors.dark, align = 'center') {
-  c.font = `800 ${size}px "Trebuchet MS", Arial, sans-serif`;
-  c.textAlign = align; c.textBaseline = 'middle'; fill(c, color); c.fillText(value, x, y);
+const fill = (ctx, color) => { ctx.fillStyle = color; };
+function stroke(ctx, color, width = 4) { ctx.strokeStyle = color; ctx.lineWidth = width; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; }
+function roundRect(ctx, x, y, width, height, radius, color) { ctx.beginPath(); ctx.roundRect(x, y, width, height, radius); fill(ctx, color); ctx.fill(); }
+function circle(ctx, x, y, radius, color) { ctx.beginPath(); ctx.arc(x, y, radius, 0, Math.PI * 2); fill(ctx, color); ctx.fill(); }
+function line(ctx, points, color, width = 4) { ctx.beginPath(); ctx.moveTo(...points[0]); points.slice(1).forEach(point => ctx.lineTo(...point)); stroke(ctx, color, width); ctx.stroke(); }
+function label(ctx, value, x, y, size = 24, color = palette.ink, align = 'center') {
+  ctx.font = `800 ${size}px "Trebuchet MS", Arial, sans-serif`; ctx.textAlign = align; ctx.textBaseline = 'middle'; fill(ctx, color); ctx.fillText(value, x, y);
 }
-function leaf(c, x, y, angle, color, scale = 1) {
-  c.save(); c.translate(x, y); c.rotate(angle);
-  c.beginPath(); c.moveTo(0, 0); c.quadraticCurveTo(-28 * scale, -29 * scale, 0, -57 * scale); c.quadraticCurveTo(27 * scale, -24 * scale, 0, 0);
-  fill(c, color); c.fill(); c.restore();
+function node(ctx, x, y, color, radius = 24) { circle(ctx, x, y, radius, color); circle(ctx, x, y, radius * .36, palette.cream); }
+function arrow(ctx, x1, y1, x2, y2, color = palette.ink) {
+  line(ctx, [[x1, y1], [x2, y2]], color, 7);
+  const angle = Math.atan2(y2 - y1, x2 - x1); const length = 16;
+  line(ctx, [[x2, y2], [x2 - Math.cos(angle - .55) * length, y2 - Math.sin(angle - .55) * length]], color, 7);
+  line(ctx, [[x2, y2], [x2 - Math.cos(angle + .55) * length, y2 - Math.sin(angle + .55) * length]], color, 7);
 }
-function book(c, x, y, scale = 1) {
-  c.save(); c.translate(x, y); c.scale(scale, scale);
-  c.beginPath(); c.moveTo(0, 18); c.quadraticCurveTo(-58, -15, -120, 6); c.lineTo(-120, 72); c.quadraticCurveTo(-55, 55, 0, 88); c.quadraticCurveTo(55, 55, 120, 72); c.lineTo(120, 6); c.quadraticCurveTo(58, -15, 0, 18);
-  fill(c, colors.cream); c.fill(); stroke(c, colors.dark, 5); c.stroke();
-  line(c, [[0, 18], [0, 87]], colors.coral, 5);
-  c.restore();
+function drawHuman(ctx, x, y, color = palette.coral) {
+  circle(ctx, x, y - 52, 22, color); roundRect(ctx, x - 28, y - 23, 56, 74, 23, color);
+  line(ctx, [[x - 18, y + 46], [x - 31, y + 92]], palette.ink, 9); line(ctx, [[x + 18, y + 46], [x + 31, y + 92]], palette.ink, 9);
 }
-function arrow(c, x, y, angle, color = colors.coral, scale = 1) {
-  c.save(); c.translate(x, y); c.rotate(angle); c.scale(scale, scale);
-  line(c, [[-38, 0], [30, 0]], color, 8);
-  line(c, [[12, -17], [31, 0], [12, 17]], color, 8);
-  c.restore();
-}
-
-function icon(c, kind, x, y, scale = 1, color = colors.dark) {
-  c.save(); c.translate(x, y); c.scale(scale, scale);
-  if (kind === 'book') {
-    book(c, 0, -34, .29);
-  } else if (kind === 'sprout') {
-    line(c, [[0, 34], [0, -19]], color, 8);
-    leaf(c, -16, 1, -.7, colors.mint, .55);
-    leaf(c, 18, -6, .7, '#8ecaa1', .55);
-    line(c, [[-28, 35], [29, 35]], color, 6);
-  } else if (kind === 'globe') {
-    circle(c, 0, 0, 37, '#e9f5ec');
-    c.beginPath(); c.arc(0, 0, 37, 0, Math.PI * 2); stroke(c, color, 5); c.stroke();
-    c.beginPath(); c.ellipse(0, 0, 15, 37, 0, 0, Math.PI * 2); stroke(c, color, 4); c.stroke();
-    line(c, [[-36, 0], [36, 0]], color, 4);
-  } else if (kind === 'pencil') {
-    c.rotate(-.6);
-    roundRect(c, -10, -38, 20, 68, 4, colors.yellow);
-    line(c, [[-10, -24], [10, -24]], color, 3);
-    c.beginPath(); c.moveTo(-10, 30); c.lineTo(0, 46); c.lineTo(10, 30); c.closePath(); fill(c, '#e8a881'); c.fill();
-  } else if (kind === 'gear') {
-    for (let i = 0; i < 8; i++) {
-      c.save(); c.rotate(i * Math.PI / 4); roundRect(c, -6, -45, 12, 24, 2, color); c.restore();
-    }
-    circle(c, 0, 0, 31, color); circle(c, 0, 0, 14, '#fff9e9');
-  } else if (kind === 'target') {
-    [38, 26, 12].forEach((r, i) => { c.beginPath(); c.arc(0, 0, r, 0, Math.PI * 2); stroke(c, i === 2 ? colors.coral : color, 5); c.stroke(); });
-  } else if (kind === 'shield') {
-    c.beginPath(); c.moveTo(0, -43); c.lineTo(34, -27); c.lineTo(29, 19); c.quadraticCurveTo(18, 36, 0, 45); c.quadraticCurveTo(-18, 36, -29, 19); c.lineTo(-34, -27); c.closePath(); fill(c, '#f7e1ba'); c.fill(); stroke(c, color, 5); c.stroke();
-    line(c, [[-16, 0], [-3, 13], [19, -14]], colors.mint, 7);
-  } else if (kind === 'light') {
-    circle(c, 0, -13, 27, '#ffe3a2');
-    c.beginPath(); c.arc(0, -13, 27, Math.PI * 1.1, Math.PI * 1.9); stroke(c, color, 5); c.stroke();
-    line(c, [[-13, 13], [-10, 28], [10, 28], [13, 13]], color, 5);
-    line(c, [[-10, 37], [10, 37]], color, 5);
-  } else if (kind === 'heart') {
-    c.beginPath(); c.moveTo(0, 35); c.bezierCurveTo(-52, 6, -42, -34, -14, -30); c.bezierCurveTo(0, -29, 0, -15, 0, -15); c.bezierCurveTo(0, -15, 0, -29, 14, -30); c.bezierCurveTo(42, -34, 52, 6, 0, 35); c.closePath(); fill(c, colors.coral); c.fill();
-  } else if (kind === 'magnify') {
-    c.beginPath(); c.arc(-8, -10, 25, 0, Math.PI * 2); stroke(c, color, 6); c.stroke();
-    line(c, [[10, 9], [39, 39]], color, 8);
-  } else if (kind === 'speech') {
-    roundRect(c, -39, -32, 78, 57, 18, '#fff9e8');
-    c.beginPath(); c.moveTo(-14, 23); c.lineTo(-24, 39); c.lineTo(0, 24); c.closePath(); fill(c, '#fff9e8'); c.fill();
-    [-19, 0, 19].forEach(px => circle(c, px, -4, 4, color));
-  } else if (kind === 'clock') {
-    circle(c, 0, 0, 37, '#fff9e8');
-    c.beginPath(); c.arc(0, 0, 37, 0, Math.PI * 2); stroke(c, color, 5); c.stroke();
-    line(c, [[0, -24], [0, 0], [17, 11]], color, 5);
-  } else if (kind === 'network') {
-    [[0, -31], [-31, 22], [31, 22]].forEach(([px, py]) => circle(c, px, py, 13, colors.mint));
-    line(c, [[0, -18], [-23, 10]], color, 5); line(c, [[0, -18], [23, 10]], color, 5); line(c, [[-18, 22], [18, 22]], color, 5);
-  } else if (kind === 'weave') {
-    [-18, 0, 18].forEach((px, i) => {
-      c.beginPath(); c.moveTo(px, -30); c.lineTo(px + 16, 0); c.lineTo(px, 30); c.lineTo(px - 16, 0); c.closePath();
-      fill(c, [colors.coral, colors.yellow, colors.mint][i]); c.fill();
-    });
-    line(c, [[-42, -36], [42, -36]], color, 4);
-    line(c, [[-42, 36], [42, 36]], color, 4);
-  } else if (kind === 'dumbbell') {
-    line(c, [[-35, 0], [35, 0]], color, 8);
-    roundRect(c, -43, -24, 14, 48, 5, colors.mint);
-    roundRect(c, -30, -17, 10, 34, 4, colors.dark);
-    roundRect(c, 20, -17, 10, 34, 4, colors.dark);
-    roundRect(c, 29, -24, 14, 48, 5, colors.mint);
+function drawChip(ctx, x, y, size = 108, color = palette.blue) {
+  roundRect(ctx, x - size / 2, y - size / 2, size, size, 20, color); roundRect(ctx, x - size * .28, y - size * .28, size * .56, size * .56, 13, palette.navy);
+  for (let i = -1; i <= 1; i++) {
+    line(ctx, [[x - size / 2 - 14, y + i * size * .25], [x - size / 2, y + i * size * .25]], palette.ink, 5);
+    line(ctx, [[x + size / 2, y + i * size * .25], [x + size / 2 + 14, y + i * size * .25]], palette.ink, 5);
+    line(ctx, [[x + i * size * .25, y - size / 2 - 14], [x + i * size * .25, y - size / 2]], palette.ink, 5);
+    line(ctx, [[x + i * size * .25, y + size / 2], [x + i * size * .25, y + size / 2 + 14]], palette.ink, 5);
   }
-  c.restore();
+  label(ctx, 'AI', x, y + 1, Math.round(size * .32), palette.white);
 }
 
-function drawTheme(c, theme) {
-  if (theme === 'cycle') {
-    roundRect(c, 52, 104, 222, 265, 28, '#e4f0dd');
-    roundRect(c, 366, 104, 222, 265, 28, '#f9e7cf');
-    circle(c, 163, 210, 71, '#c3dec9'); circle(c, 477, 210, 71, '#f3cc9c');
-    icon(c, 'book', 163, 208, 1.25); icon(c, 'sprout', 477, 207, 1.25);
-    text(c, 'VĂN HÓA', 163, 312, 27); text(c, 'CON NGƯỜI', 477, 312, 25);
-    arrow(c, 320, 178, 0, colors.coral, .76);
-    arrow(c, 320, 283, Math.PI, colors.mint, .76);
-    text(c, 'SÁNG TẠO', 320, 123, 16, colors.coral);
-    text(c, 'BỒI DƯỠNG', 320, 340, 16, colors.mint);
-  } else if (theme === 'scope') {
-    const cards = [
-      [48, 98, '#f9e6c1', 'globe', 'NGHĨA RỘNG', 'Cách sống'],
-      [332, 98, '#d6eadd', 'heart', 'NGHĨA HẸP', 'Tinh thần'],
-      [48, 253, '#d6e9ed', 'book', 'GIÁO DỤC', 'Học và đọc'],
-      [332, 253, '#f5ded0', 'gear', 'CÔNG CỤ', 'Cách sử dụng'],
-    ];
-    cards.forEach(([x, y, bg, symbol, label, detail]) => {
-      roundRect(c, x, y, 260, 132, 22, bg);
-      circle(c, x + 62, y + 65, 49, '#fff9e9');
-      icon(c, symbol, x + 62, y + 65, .72);
-      text(c, label, x + 125, y + 52, 23, colors.dark, 'left');
-      text(c, detail, x + 125, y + 82, 20, colors.ink, 'left');
+function drawTheme(ctx, theme) {
+  if (theme === 'classroom') {
+    roundRect(ctx, 55, 96, 530, 278, 30, '#dff2eb'); drawHuman(ctx, 160, 218); drawChip(ctx, 447, 213, 126);
+    arrow(ctx, 235, 204, 360, 204, palette.purple); arrow(ctx, 360, 252, 235, 252, palette.mint);
+    label(ctx, 'ASK', 296, 181, 18, palette.purple); label(ctx, 'CHECK', 296, 277, 18, palette.mint);
+  } else if (theme === 'competency') {
+    [['HUMAN', palette.coral], ['ETHICS', palette.yellow], ['TECH', palette.blue], ['DESIGN', palette.mint]].forEach(([value, color], index) => {
+      const x = 55 + (index % 2) * 267; const y = 98 + Math.floor(index / 2) * 142;
+      roundRect(ctx, x, y, 252, 126, 24, color); node(ctx, x + 52, y + 63, palette.cream, 28); label(ctx, value, x + 100, y + 63, 24, palette.navy, 'left');
     });
-  } else if (theme === 'roots') {
-    roundRect(c, 48, 101, 544, 250, 28, '#e5eee0');
-    line(c, [[320, 326], [320, 213]], '#916d53', 23);
-    line(c, [[320, 253], [251, 199]], '#916d53', 11);
-    line(c, [[320, 249], [390, 189]], '#916d53', 11);
-    [[237, 192, '#8fc5a4'], [285, 158, '#acd4b2'], [348, 158, '#badca9'], [404, 192, '#8fc5a4']].forEach(([x, y, color]) => circle(c, x, y, 46, color));
-    line(c, [[320, 328], [269, 359], [217, 359]], '#916d53', 8);
-    line(c, [[320, 328], [371, 359], [423, 359]], '#916d53', 8);
-    roundRect(c, 61, 215, 172, 61, 18, '#fff9e9'); text(c, 'BẢN SẮC', 147, 246, 24);
-    roundRect(c, 408, 215, 172, 61, 18, '#fff9e9'); text(c, 'TINH HOA', 494, 246, 24);
-    text(c, 'CHÍNH TRỊ  •  KINH TẾ  •  XÃ HỘI', 320, 389, 22);
-  } else if (theme === 'roles') {
-    const cards = [
-      [45, 94, '#f9e3b9', 'target', 'MỤC TIÊU', 'Đời sống tốt đẹp'],
-      [328, 94, '#d4e9dd', 'light', 'ĐỘNG LỰC', 'Tri thức · sáng tạo'],
-      [45, 251, '#d3e8ec', 'shield', 'MẶT TRẬN', 'Bồi đắp cái tốt'],
-      [328, 251, '#f5ddd2', 'heart', 'VÌ NHÂN DÂN', 'Từ đời sống mà ra'],
-    ];
-    cards.forEach(([x, y, bg, symbol, label, detail]) => {
-      roundRect(c, x, y, 267, 137, 22, bg);
-      circle(c, x + 65, y + 67, 48, '#fff9e9');
-      icon(c, symbol, x + 65, y + 67, .73);
-      text(c, label, x + 128, y + 54, 22, colors.dark, 'left');
-      text(c, detail, x + 128, y + 85, 16, colors.ink, 'left');
+  } else if (theme === 'data') {
+    [[135, 'DATA', palette.yellow], [320, 'MODEL', palette.blue], [505, 'CHECK', palette.mint]].forEach(([x, value, color]) => {
+      roundRect(ctx, x - 65, 139, 130, 150, 26, color); node(ctx, x, 190, palette.cream, 31); label(ctx, value, x, 254, 21);
     });
-  } else if (theme === 'three') {
-    const columns = [
-      [49, '#f5ded1', 'weave', 'DÂN TỘC', 'Bản sắc · tự chủ'],
-      [242, '#d4e8ec', 'magnify', 'KHOA HỌC', 'Tiến bộ · lý lẽ'],
-      [435, '#e0ebd0', 'book', 'ĐẠI CHÚNG', 'Dễ tiếp cận'],
-    ];
-    columns.forEach(([x, bg, symbol, label, detail]) => {
-      roundRect(c, x, 104, 156, 267, 27, bg);
-      circle(c, x + 78, 191, 63, '#fff9e9');
-      icon(c, symbol, x + 78, 190, 1.06);
-      text(c, label, x + 78, 287, 22);
-      text(c, detail, x + 78, 328, 15, colors.ink);
+    arrow(ctx, 205, 214, 250, 214, palette.purple); arrow(ctx, 390, 214, 435, 214, palette.purple);
+    line(ctx, [[108, 324], [532, 324]], palette.ink, 6); [108, 214, 320, 426, 532].forEach((x, i) => circle(ctx, x, 324 - [16, -6, 12, -13, 8][i], 8, palette.coral));
+  } else if (theme === 'verify') {
+    [[120, 'PROMPT', palette.yellow], [320, 'OUTPUT', palette.blue], [520, 'VERIFY', palette.mint]].forEach(([x, value, color]) => { circle(ctx, x, 215, 68, color); label(ctx, value, x, 215, 20); });
+    arrow(ctx, 194, 215, 240, 215, palette.purple); arrow(ctx, 394, 215, 440, 215, palette.purple); line(ctx, [[489, 211], [514, 236], [553, 183]], palette.white, 12);
+  } else if (theme === 'trust') {
+    drawChip(ctx, 320, 214, 116, palette.purple);
+    [[145, 135, 'SAFE', palette.coral], [495, 135, 'FAIR', palette.yellow], [145, 302, 'PRIVATE', palette.blue], [495, 302, 'CLEAR', palette.mint]].forEach(([x, y, value, color]) => {
+      line(ctx, [[320, 214], [x, y]], '#aacbd2', 5); roundRect(ctx, x - 65, y - 31, 130, 62, 18, color); label(ctx, value, x, y, 18);
     });
-    line(c, [[90, 391], [550, 391]], colors.dark, 5);
-  } else if (theme === 'whole') {
-    roundRect(c, 47, 100, 546, 258, 30, '#e2eddf');
-    line(c, [[320, 181], [195, 275], [445, 275], [320, 181]], '#82b69e', 9);
-    [[320, 169, '#cfe5ed', 'TRÍ', 'book'], [195, 284, '#f5ded0', 'TÂM', 'heart'], [445, 284, '#e4e9bb', 'THỂ', 'dumbbell']].forEach(([x, y, bg, label, symbol]) => {
-      circle(c, x, y, 77, bg); circle(c, x, y - 18, 35, '#fff9e9');
-      icon(c, symbol, x, y - 18, .55);
-      text(c, label, x, y + 39, 26);
+  } else if (theme === 'risk') {
+    [['GOVERN', palette.coral], ['MAP', palette.yellow], ['MEASURE', palette.blue], ['MANAGE', palette.mint]].forEach(([value, color], index) => {
+      const angle = -Math.PI / 2 + index * Math.PI / 2; const x = 320 + Math.cos(angle) * 148; const y = 222 + Math.sin(angle) * 112;
+      roundRect(ctx, x - 72, y - 32, 144, 64, 18, color); label(ctx, value, x, y, 18);
     });
-    text(c, 'GIA ĐÌNH  ·  CỘNG ĐỒNG  ·  XÃ HỘI', 320, 391, 20);
-  } else if (theme === 'people') {
-    roundRect(c, 52, 112, 225, 253, 28, '#f7e5cd');
-    roundRect(c, 363, 112, 225, 253, 28, '#d9eadd');
-    circle(c, 164, 209, 65, '#fff9e9'); icon(c, 'heart', 164, 209, 1.13);
-    circle(c, 476, 209, 65, '#fff9e9'); icon(c, 'gear', 476, 209, 1.04);
-    text(c, 'MỤC TIÊU', 164, 306, 25); text(c, 'ĐỘNG LỰC', 476, 306, 25);
-    arrow(c, 320, 185, 0, colors.coral, .76); arrow(c, 320, 280, Math.PI, colors.mint, .76);
-    text(c, 'VÌ CON NGƯỜI  ⇄  BẰNG SỨC NGƯỜI', 320, 391, 24);
-  } else if (theme === 'planting') {
-    const habits = [
-      [48, 102, '#d7e9eb', 'book', ['HỌC CÓ NGUỒN']],
-      [330, 102, '#f6e5c2', 'speech', ['NÓI CÓ', 'TRÁCH NHIỆM']],
-      [48, 251, '#f6ded4', 'clock', ['LÀM CÓ', 'KỶ LUẬT']],
-      [330, 251, '#dcebd6', 'network', ['VÌ CỘNG ĐỒNG']],
-    ];
-    habits.forEach(([x, y, bg, symbol, lines]) => {
-      roundRect(c, x, y, 261, 133, 22, bg);
-      circle(c, x + 60, y + 65, 47, '#fff9e9');
-      icon(c, symbol, x + 60, y + 65, .7);
-      lines.forEach((label, i) => text(c, label, x + 119, y + 67 + (i - (lines.length - 1) / 2) * 24, 18, colors.dark, 'left'));
-    });
-    text(c, 'HỒNG + CHUYÊN  ·  BẮT ĐẦU TỪ VIỆC NHỎ', 320, 402, 20);
+    circle(ctx, 320, 222, 48, palette.navy); label(ctx, 'RISK', 320, 222, 21, palette.white);
+  } else if (theme === 'health') {
+    roundRect(ctx, 70, 112, 500, 242, 32, '#dff2eb'); drawHuman(ctx, 175, 218); drawChip(ctx, 465, 214, 108);
+    line(ctx, [[236, 220], [267, 220], [282, 192], [303, 250], [325, 205], [344, 220], [397, 220]], palette.coral, 7);
+  } else if (theme === 'space') {
+    fill(ctx, palette.navy); ctx.fillRect(38, 82, 564, 292);
+    [[78, 119], [553, 134], [490, 318], [172, 330], [342, 112]].forEach(([x, y], i) => circle(ctx, x, y, i % 2 ? 3 : 5, palette.yellow));
+    circle(ctx, 482, 207, 70, '#d88869'); circle(ctx, 461, 185, 15, '#b86458'); circle(ctx, 510, 228, 11, '#b86458');
+    roundRect(ctx, 135, 218, 116, 58, 16, palette.cream); circle(ctx, 158, 288, 21, palette.ink); circle(ctx, 228, 288, 21, palette.ink);
+    line(ctx, [[192, 218], [192, 165], [229, 147]], palette.cream, 7); circle(ctx, 238, 143, 10, palette.yellow);
+    line(ctx, [[263, 194], [376, 173]], palette.blue, 4); line(ctx, [[263, 215], [389, 215]], palette.blue, 4); line(ctx, [[263, 236], [376, 257]], palette.blue, 4);
   }
 }
 
-function makePainting(lesson) {
-  const canvas = document.createElement('canvas'); canvas.width = 640; canvas.height = 480;
-  const c = canvas.getContext('2d');
-  const background = c.createLinearGradient(0, 0, 640, 480);
-  background.addColorStop(0, '#f5edcf'); background.addColorStop(1, '#c9e4d3');
-  fill(c, background); c.fillRect(0, 0, 640, 480);
-  circle(c, 584, 43, 108, '#fff8e2'); circle(c, 76, 437, 108, '#d7ebdf');
-  roundRect(c, 25, 19, 226, 42, 21, '#fff9e9');
-  text(c, `SƠ ĐỒ TỪ SLIDE ${lesson.slide}`, 138, 40, 18, colors.dark);
-  text(c, 'HCM202', 579, 40, 18, colors.ink);
-  drawTheme(c, lesson.theme);
-  fill(c, '#3f7974'); c.fillRect(0, 416, 640, 64);
-  fill(c, '#f1c46a'); c.fillRect(0, 416, 640, 6);
-  c.font = '800 29px "Trebuchet MS", Arial, sans-serif';
-  c.textAlign = 'center'; c.textBaseline = 'middle'; fill(c, '#fff9e7');
-  c.fillText(lesson.title.toUpperCase(), 320, 450, 590);
-  c.globalAlpha = .08;
-  for (let i = 0; i < 900; i++) { fill(c, i % 2 ? '#fff' : colors.dark); c.fillRect((i * 193 + 41) % 640, (i * 137 + 29) % 480, 2, 2); }
-  c.globalAlpha = 1;
+function makePainting(lesson, index) {
+  const canvas = document.createElement('canvas'); canvas.width = 640; canvas.height = 480; const ctx = canvas.getContext('2d');
+  const gradient = ctx.createLinearGradient(0, 0, 640, 480); gradient.addColorStop(0, '#fff8dd'); gradient.addColorStop(1, '#cce9df');
+  fill(ctx, gradient); ctx.fillRect(0, 0, 640, 480); circle(ctx, 590, 35, 95, 'rgba(255,255,255,.55)'); circle(ctx, 48, 425, 100, 'rgba(99,183,213,.12)');
+  roundRect(ctx, 24, 20, 174, 42, 21, palette.white); label(ctx, `AI LAB  /  0${index + 1}`, 111, 41, 17, palette.navy); label(ctx, 'LEARN  TEST  CREATE', 614, 41, 14, palette.ink, 'right');
+  drawTheme(ctx, lesson.theme); fill(ctx, palette.navy); ctx.fillRect(0, 415, 640, 65); fill(ctx, palette.yellow); ctx.fillRect(0, 415, 640, 6); label(ctx, lesson.poster, 320, 450, 25, palette.white);
   return canvas;
 }
 
-export const artworks = lessons.map(lesson => ({ ...lesson, canvas: makePainting(lesson) }));
+export const artworks = lessons.map((lesson, index) => ({ ...lesson, canvas: makePainting(lesson, index) }));

@@ -1,13 +1,27 @@
--- Add the two selectable avatars to an existing classroom installation.
+-- Add all selectable avatars and leaderboard reset to an existing classroom installation.
 -- Run after the 20261005 migrations. Safe to run more than once.
 
 alter table public.hcm_members
-  add column if not exists gender text not null default 'male' check (gender in ('male', 'female')),
-  add column if not exists avatar text not null default 'male-classic' check (avatar in ('male-classic', 'female-suzuka'));
+  add column if not exists gender text not null default 'male',
+  add column if not exists avatar text not null default 'male-classic';
+
+alter table public.hcm_members drop constraint if exists hcm_members_gender_check;
+alter table public.hcm_members drop constraint if exists hcm_members_avatar_check;
 
 update public.hcm_members set
-  gender = case when gender = 'female' then 'female' else 'male' end,
-  avatar = case when gender = 'female' then 'female-suzuka' else 'male-classic' end;
+  gender = case
+    when avatar in ('agnes-tachyon', 'megumin', 'miku', 'female-suzuka', 'super-creek') then 'female'
+    when avatar = 'chikawa' then 'other'
+    else 'male'
+  end,
+  avatar = case when avatar in (
+    'male-classic', 'agnes-tachyon', 'chikawa', 'megumin', 'miku', 'professor-layton', 'female-suzuka', 'super-creek'
+  ) then avatar else 'male-classic' end;
+
+alter table public.hcm_members add constraint hcm_members_gender_check check (gender in ('male', 'female', 'other'));
+alter table public.hcm_members add constraint hcm_members_avatar_check check (avatar in (
+  'male-classic', 'agnes-tachyon', 'chikawa', 'megumin', 'miku', 'professor-layton', 'female-suzuka', 'super-creek'
+));
 
 create or replace function hcm_private.hcm_state()
 returns jsonb language plpgsql security definer set search_path = '' as $$
@@ -76,8 +90,11 @@ create or replace function hcm_private.hcm_join_profile(p_name text, p_room inte
 returns jsonb language plpgsql security definer set search_path = '' as $$
 declare v_gender text := lower(coalesce(p_gender, '')); v_avatar text := lower(coalesce(p_avatar, ''));
 begin
-  if v_gender not in ('male', 'female') then raise exception 'Giới tính không hợp lệ.'; end if;
-  if (v_gender = 'male' and v_avatar <> 'male-classic') or (v_gender = 'female' and v_avatar <> 'female-suzuka') then
+  if v_gender not in ('male', 'female', 'other') then raise exception 'Giới tính không hợp lệ.'; end if;
+  if (v_gender, v_avatar) not in (
+    ('male', 'male-classic'), ('female', 'agnes-tachyon'), ('other', 'chikawa'), ('female', 'megumin'),
+    ('female', 'miku'), ('male', 'professor-layton'), ('female', 'female-suzuka'), ('female', 'super-creek')
+  ) then
     raise exception 'Avatar không phù hợp.';
   end if;
   perform hcm_private.hcm_join_room(p_name, p_room);
@@ -95,3 +112,28 @@ revoke all on function hcm_private.hcm_join_profile(text, integer, text, text) f
 grant execute on function hcm_private.hcm_join_profile(text, integer, text, text) to authenticated;
 revoke all on function public.hcm_join_profile(text, integer, text, text) from public, anon;
 grant execute on function public.hcm_join_profile(text, integer, text, text) to authenticated;
+
+create or replace function hcm_private.hcm_reset_exam()
+returns jsonb language plpgsql security definer set search_path = '' as $$
+declare v_round integer;
+begin
+  if not exists(select 1 from public.hcm_members where user_id = auth.uid() and role = 'teacher' and last_seen > clock_timestamp() - interval '60 seconds') then
+    raise exception 'Chỉ giảng viên mới reset được bảng xếp hạng.';
+  end if;
+  perform pg_advisory_xact_lock(2026001);
+  select round into v_round from public.hcm_exam where id = 1 for update;
+  delete from public.hcm_exam_participants where round = v_round;
+  update public.hcm_exam set phase = 'idle', started_at = null, ends_at = null where id = 1;
+  return hcm_private.hcm_state();
+end;
+$$;
+
+create or replace function public.hcm_reset_exam()
+returns jsonb language sql security invoker set search_path = '' as $$
+  select hcm_private.hcm_reset_exam();
+$$;
+
+revoke all on function hcm_private.hcm_reset_exam() from public;
+grant execute on function hcm_private.hcm_reset_exam() to authenticated;
+revoke all on function public.hcm_reset_exam() from public, anon;
+grant execute on function public.hcm_reset_exam() to authenticated;

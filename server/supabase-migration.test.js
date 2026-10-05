@@ -7,6 +7,7 @@ const migration = await readFile(new URL('../supabase/migrations/20261001_online
 const roomSelectionMigration = await readFile(new URL('../supabase/migrations/20261005_room_selection.sql', import.meta.url), 'utf8');
 const examQuestionsMigration = await readFile(new URL('../supabase/migrations/20261005_exam_questions_10.sql', import.meta.url), 'utf8');
 const avatarProfilesMigration = await readFile(new URL('../supabase/migrations/20261006_avatar_profiles.sql', import.meta.url), 'utf8');
+const aiClassroomMigration = await readFile(new URL('../supabase/migrations/20261006_ai_classroom_content.sql', import.meta.url), 'utf8');
 const id = number => `00000000-0000-4000-8000-${String(number).padStart(12, '0')}`;
 
 test('migration: phân 10 người/phòng và dùng một lượt kiểm tra cho mọi phòng', async () => {
@@ -29,6 +30,7 @@ test('migration: phân 10 người/phòng và dùng một lượt kiểm tra cho
     await db.exec(roomSelectionMigration);
     await db.exec(examQuestionsMigration);
     await db.exec(avatarProfilesMigration);
+    await db.exec(aiClassroomMigration);
     const call = async (number, query) => {
       await db.query(`select set_config('request.jwt.claim.sub', $1, false)`, [id(number)]);
       return (await db.query(query)).rows[0];
@@ -58,9 +60,9 @@ test('migration: phân 10 người/phòng và dùng một lượt kiểm tra cho
     const movedRoom = (await call(12, "select public.hcm_join_room('Đổi phòng 9', 9) as state")).state;
     assert.equal(movedRoom.me.roomNo, 9);
     assert.equal(movedRoom.me.seatId, null);
-    const femaleProfile = (await call(12, "select public.hcm_join_profile('Hồ sơ nữ', 9, 'female', 'female-suzuka') as state")).state;
+    const femaleProfile = (await call(12, "select public.hcm_join_profile('Hồ sơ nữ', 9, 'female', 'miku') as state")).state;
     assert.equal(femaleProfile.me.gender, 'female');
-    assert.equal(femaleProfile.me.avatar, 'female-suzuka');
+    assert.equal(femaleProfile.me.avatar, 'miku');
     await assert.rejects(call(11, 'select * from public.hcm_exam_questions'), /permission denied/);
     await assert.rejects(call(2, 'select public.hcm_start_exam()'), /Chỉ giảng viên/);
 
@@ -81,7 +83,7 @@ test('migration: phân 10 người/phòng và dùng một lượt kiểm tra cho
     assert.equal(otherRoom.questions.length, 10);
     assert.equal((await call(3, 'select public.hcm_state() as state')).state.me.eligible, false);
 
-    const first = (await call(2, "select public.hcm_submit_exam('[0,0,2,0,1,1,2,0,0,3]'::jsonb) as state")).state;
+    const first = (await call(2, "select public.hcm_submit_exam('[1,2,1,0,1,2,1,1,0,3]'::jsonb) as state")).state;
     assert.equal(first.me.submitted, true);
     assert.equal(first.exam.submittedCount, 1);
     const second = (await call(11, "select public.hcm_submit_exam('[0,0,0,0,0,0,0,0,0,0]'::jsonb) as state")).state;
@@ -90,6 +92,11 @@ test('migration: phân 10 người/phòng và dùng một lượt kiểm tra cho
     assert.equal(second.exam.rankings[0].id, id(2));
     assert.equal(second.exam.rankings[0].correct, 10);
     assert.equal(second.exam.rankings[1].id, id(11));
+    await assert.rejects(call(2, 'select public.hcm_reset_exam()'), /Chỉ giảng viên/);
+    const reset = (await call(1, 'select public.hcm_reset_exam() as state')).state;
+    assert.equal(reset.exam.phase, 'idle');
+    assert.equal(reset.exam.participantCount, 0);
+    assert.deepEqual(reset.exam.rankings, []);
   } finally {
     await db.close();
   }

@@ -1,12 +1,12 @@
-# Lớp học Màu Nắng
+# AI Lab · Lớp học tương tác 3D
 
-Lớp học 3D bằng Three.js và Vite. Người chơi khám phá tám tranh về bài thuyết trình *Văn hóa và con người trong tư tưởng Hồ Chí Minh*, ngồi vào ghế và tham gia bài kiểm tra 15 phút. TV trong lớp mở quiz riêng với sprite chim và ống từ [samuelcust/flappy-bird-assets](https://github.com/samuelcust/flappy-bird-assets); không sử dụng âm thanh.
+Lớp học 3D bằng Three.js và Vite giúp sinh viên khám phá tám chủ đề về trí tuệ nhân tạo, kiểm chứng đầu ra và sử dụng AI có trách nhiệm. Người chơi có thể chọn avatar, di chuyển, trò chuyện theo phòng, xem tranh, chơi quiz, ngồi vào ghế và cùng tham gia bài kiểm tra 15 phút.
 
 ## Chạy bản trực tuyến
 
 1. Tạo dự án Supabase. Trong **Authentication → Providers**, bật **Anonymous Sign-Ins**.
-2. Trong **SQL Editor**, chạy toàn bộ [migration lớp học](supabase/migrations/20261001_online_classroom.sql) một lần. Nếu cơ sở dữ liệu đã được cài trước ngày 05/10/2026, chạy lần lượt [migration chọn phòng](supabase/migrations/20261005_room_selection.sql), [migration đề kiểm tra 10 câu](supabase/migrations/20261005_exam_questions_10.sql), rồi [migration hồ sơ avatar](supabase/migrations/20261006_avatar_profiles.sql). Ứng dụng dùng các kênh `private: true` và chính sách truy cập trong migration. Có thể để **Allow public access** bật; tắt tùy chọn này nếu muốn toàn bộ dự án chỉ cho phép kênh riêng, không cho tạo kênh công khai.
-3. Tạo `.env` từ `.env.example` và điền URL cùng **publishable key** của dự án. Không đưa `service_role` hoặc secret key vào ứng dụng trình duyệt. `.env` hiện có với tên `NEXT_PUBLIC_SUPABASE_URL` và `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` cũng được hỗ trợ.
+2. Với dự án mới, chạy lần lượt các migration trong `supabase/migrations` theo thứ tự tên file. Với dự án đã cài trước đó, chạy thêm [migration avatar và reset bảng xếp hạng](supabase/migrations/20261006_avatar_profiles.sql), sau đó chạy [migration nội dung AI](supabase/migrations/20261006_ai_classroom_content.sql). Migration nội dung AI đưa bài kiểm tra về trạng thái chờ và xóa kết quả của lượt hiện tại để tránh thay câu hỏi giữa lúc đang thi.
+3. Tạo `.env` từ `.env.example` và điền URL cùng **publishable key**. Không đưa `service_role` hoặc secret key vào ứng dụng trình duyệt. Các biến `NEXT_PUBLIC_SUPABASE_URL` và `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` cũng được hỗ trợ.
 4. Chạy:
 
 ```bash
@@ -14,20 +14,16 @@ npm install
 npm run dev
 ```
 
-Mở địa chỉ Vite in trong terminal. Khi triển khai Vercel, đặt `VITE_SUPABASE_URL` và `VITE_SUPABASE_PUBLISHABLE_KEY` trong **Project Settings → Environment Variables**, rồi build lại; lệnh build là `npm run build`, thư mục đầu ra là `dist`. Có thể dùng cùng một dự án Supabase cho bản chạy tại máy và bản Vercel để dùng chung phòng và bài kiểm tra.
+Khi triển khai Vercel, đặt `VITE_SUPABASE_URL` và `VITE_SUPABASE_PUBLISHABLE_KEY` trong **Project Settings → Environment Variables**. Lệnh build là `npm run build`, thư mục đầu ra là `dist`.
 
-## Phòng, người chơi và bài kiểm tra
+## Phòng học và bài kiểm tra
 
-- Tối đa **10 người trong một phòng**, tính cả giảng viên. Người thứ 11 được xếp vào phòng tiếp theo. Mỗi phòng có không gian 3D riêng; vị trí và hoạt ảnh nhân vật chỉ phát trong phòng đó để giảm lưu lượng.
-- Góc trên hiển thị tổng số người đang trực tuyến, số sinh viên đã ngồi và số người trong phòng hiện tại. Người đóng trang hết hiệu lực sau tối đa khoảng 60 giây nếu tín hiệu rời phòng không gửi kịp.
-- Mở ô `?` để đặt tên. Tên chính xác `NHOM3HCM202AI1802` nhận vai trò giảng viên. Mã vai trò này là quy ước lớp học, không phải cơ chế bảo mật cho một kỳ thi chính thức.
-- Sinh viên tới gần ghế rồi nhấn `E` hoặc nhấp ghế. Giảng viên nhấn **Mở kiểm tra 15 phút**; **tất cả sinh viên đang ngồi ở mọi phòng** được ghi nhận cho cùng một lượt và có cùng thời điểm bắt đầu/kết thúc theo đồng hồ máy chủ. Phòng không có giảng viên vẫn nhận bài.
-- Nộp đủ năm câu trắc nghiệm trước khi hết giờ. Supabase chấm bài và xếp hạng chung mọi phòng: số câu đúng cao hơn đứng trước, sau đó tới thời gian làm bài ngắn hơn. Ba hạng đầu được tô vàng, bạc, đồng. Bài chưa nộp khi hết giờ được tính 0 điểm.
-- Để thử nhiều người, dùng các trình duyệt/profiles hoặc thiết bị khác nhau. Các tab cùng profile chia sẻ phiên đăng nhập ẩn danh và được tính là **một người chơi**.
-
-Vị trí nhân vật truyền qua Supabase Realtime Broadcast với giới hạn tối đa 4 cập nhật/giây khi di chuyển và tự giảm nhịp khi số người/phòng tăng; Presence giữ danh sách người trong từng phòng. Việc phân phòng, ghế, đồng hồ và điểm số được xử lý bằng hàm Postgres trong migration. Khi 10 người cùng di chuyển liên tục, gói Supabase Free có thể chạm giới hạn Realtime; nên đo tải trên dự án thật và dùng gói có hạn mức phù hợp. Chạy `npm run test:online` để thử migration và luồng kiểm tra trên PostgreSQL thu gọn. Bản LAN cũ vẫn có thể chạy riêng bằng `npm run dev:lan`; `npm run test:lan` kiểm tra luồng LAN.
-
-Trò chuyện dùng Realtime Broadcast theo từng phòng và chỉ giữ tối đa 60 tin nhắn trong RAM của mỗi trình duyệt. Tin cũ không được ghi vào PostgreSQL, không chuyển cho người vào sau và tự mất khi tải lại, thoát trang hoặc chuyển phòng.
+- Tối đa **10 người trong một phòng**, tính cả giảng viên. Người tiếp theo được xếp vào phòng mới. Mỗi phòng có trạng thái 3D, Presence, chuyển động và chat riêng.
+- Tên chính xác `NHOM3HCM202AI1802` nhận vai trò giảng viên. Đây là quy ước trình diễn, không phải cơ chế xác thực cho một kỳ thi chính thức.
+- Sinh viên tới gần ghế rồi nhấn `E` hoặc nhấp ghế. Khi giảng viên mở bài, mọi sinh viên đang ngồi ở tất cả phòng được ghi nhận cho cùng một lượt và dùng thời gian máy chủ.
+- Bài kiểm tra có **10 câu**. Supabase chấm bài và xếp theo số câu đúng, sau đó theo thời gian nộp. Giảng viên có thể kết thúc bài hoặc reset bảng xếp hạng.
+- Chat dùng Realtime Broadcast và chỉ giữ tối đa 60 tin trong RAM của mỗi trình duyệt. Tin nhắn mất khi tải lại, thoát trang hoặc chuyển phòng.
+- Chạy `npm run test:online` để kiểm tra toàn bộ chuỗi migration và luồng thi trên PostgreSQL thu gọn. Bản LAN chạy bằng `npm run dev:lan`; dùng `npm run test:lan` để kiểm tra máy chủ LAN.
 
 ## Điều khiển
 
@@ -36,4 +32,16 @@ Trò chuyện dùng Realtime Broadcast theo từng phòng và chỉ giữ tối 
 - Nhấp tranh hoặc TV để xem nội dung, hoặc tới gần rồi nhấn `E`.
 - Trên điện thoại, dùng joystick ở góc dưới trái.
 
-Nội dung tranh và quiz được biên soạn từ `HCM202_AI1802_Nhom03_05_ShowcaseSlides_v1.0.pptx` và `HCM202_AI1802_Nhom03_05_ShowcaseScript_v1.0.docx` trong `D:\HCM202_TT_Templates_FA26_Updated\05_Showcase_Slides_Script`. Tranh là infographic vật thể và sơ đồ, không có hình người hay chân dung lãnh tụ. Sprite Flappy Bird cùng giấy phép MIT nằm trong `public/flappy`.
+## Nguồn nội dung AI
+
+Các tranh là đồ họa vector được vẽ trực tiếp trong ứng dụng để hiển thị ổn định và tránh lỗi chữ. Nội dung được biên soạn từ các nguồn chính thức:
+
+- [UNESCO · AI trong giáo dục](https://www.unesco.org/en/digital-education/artificial-intelligence)
+- [UNESCO · Khung năng lực AI cho học sinh, sinh viên](https://www.unesco.org/en/articles/ai-competency-framework-students?hub=84624)
+- [UNESCO · Hướng dẫn AI tạo sinh trong giáo dục và nghiên cứu](https://www.unesco.org/en/articles/guidance-generative-ai-education-and-research?hub=394)
+- [NIST · AI đáng tin cậy và có trách nhiệm](https://www.nist.gov/trustworthy-and-responsible-ai)
+- [NIST · Khung quản trị rủi ro AI](https://www.nist.gov/itl/ai-risk-management-framework)
+- [WHO · Đạo đức và quản trị AI cho sức khỏe](https://www.who.int/publications/i/item/9789240029200)
+- [NASA · Artificial Intelligence](https://www.nasa.gov/artificial-intelligence/)
+
+Sprite Flappy Bird có giấy phép MIT nằm trong `public/flappy`.

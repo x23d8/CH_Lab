@@ -5,6 +5,7 @@ import { clone as cloneSkeleton } from 'three/addons/utils/SkeletonUtils.js';
 import { artworks } from './presentation-art.js';
 import { deskPositions, seatPosition } from './classroom-config.js';
 import { approachMotionPose, createMotionBuffer, predictMotionPose, pushMotionSample } from './remote-motion.js';
+import { getAvatarOption } from './avatar-options.js';
 
 const palette = {
   ink: 0x416567, mint: 0xc9ead8, darkMint: 0x83bca5, cream: 0xfff6dd,
@@ -21,14 +22,23 @@ const mat = (color, options = {}) => new THREE.MeshToonMaterial({ color, gradien
 const materials = Object.fromEntries(Object.entries(palette).map(([key, value]) => [key, mat(value)]));
 const flat = (color, options = {}) => new THREE.MeshBasicMaterial({ color, ...options });
 
-const femaleAvatarUrl = new URL('../models/silence_suzuka_chibi.glb', import.meta.url).href;
-let femaleAvatarTemplatePromise;
+const avatarAssetUrls = {
+  'agnes-tachyon': new URL('../models/agnes_tachyon_chibi.glb', import.meta.url).href,
+  chikawa: new URL('../models/chikawa.glb', import.meta.url).href,
+  megumin: new URL('../models/megumin_and_chomosuke.glb', import.meta.url).href,
+  miku: new URL('../models/miku_chibi.glb', import.meta.url).href,
+  'professor-layton': new URL('../models/professor_layton_chibi.glb', import.meta.url).href,
+  'female-suzuka': new URL('../models/silence_suzuka_chibi.glb', import.meta.url).href,
+  'super-creek': new URL('../models/super_creek_chibi.glb', import.meta.url).href,
+};
+const avatarTemplatePromises = new Map();
 
-function loadFemaleAvatarTemplate() {
-  if (!femaleAvatarTemplatePromise) {
-    femaleAvatarTemplatePromise = new GLTFLoader().loadAsync(femaleAvatarUrl).then(gltf => gltf.scene);
+function loadAvatarTemplate(avatar) {
+  if (!avatarAssetUrls[avatar]) return Promise.reject(new Error(`Không tìm thấy model ${avatar}.`));
+  if (!avatarTemplatePromises.has(avatar)) {
+    avatarTemplatePromises.set(avatar, new GLTFLoader().loadAsync(avatarAssetUrls[avatar]).then(gltf => gltf.scene));
   }
-  return femaleAvatarTemplatePromise;
+  return avatarTemplatePromises.get(avatar);
 }
 
 function mesh(geometry, material, parent, x = 0, y = 0, z = 0) {
@@ -192,9 +202,9 @@ function addBoard(room) {
   const texture = makeTextTexture(1024, 512, (c) => {
     c.clearRect(0, 0, 1024, 512);
     c.textAlign = 'center'; c.fillStyle = '#fff8d9';
-    c.font = 'bold 66px "Trebuchet MS", sans-serif'; c.fillText('LỜI DẶN HÔM NAY', 512, 98);
+    c.font = 'bold 66px "Trebuchet MS", sans-serif'; c.fillText('AI LAB HÔM NAY', 512, 98);
     c.fillStyle = '#f8eab9'; c.font = '45px "Trebuchet MS", sans-serif';
-    ['✦  Hãy tò mò và đặt câu hỏi', '✦  Lắng nghe bạn bè', '✦  Giữ lớp học thật vui'].forEach((line, i) => c.fillText(line, 512, 190 + i * 82));
+    ['✦  Đặt câu hỏi rõ ràng', '✦  Kiểm chứng đầu ra', '✦  Bảo vệ dữ liệu riêng tư'].forEach((line, i) => c.fillText(line, 512, 190 + i * 82));
     c.strokeStyle = '#f8d496'; c.lineWidth = 4; c.beginPath(); c.moveTo(185, 121); c.lineTo(839, 121); c.stroke();
     c.font = '42px sans-serif'; c.fillStyle = '#ffd997'; c.fillText('☆', 900, 82); c.fillText('☆', 124, 392);
   });
@@ -322,32 +332,42 @@ function makeCharacter(room) {
     const foot = sphere(leg, 0, -0.49, 0.13, 0.17, shoe); foot.scale.set(1, 0.58, 1.38); legs.push(leg);
   });
   const maleParts = [...body.children];
-  const femaleContainer = new THREE.Group();
-  body.add(femaleContainer);
-  femaleContainer.visible = false;
-  let femaleRig = null;
-  let femaleLoading = false;
-  let femaleLoadFailed = false;
+  const modelContainer = new THREE.Group();
+  body.add(modelContainer);
+  modelContainer.visible = false;
+  let modelRig = null;
+  let loadingAvatar = null;
+  let loadVersion = 0;
+  const failedAvatars = new Set();
   let currentAvatar = 'male-classic';
 
-  const findBone = (model, pattern) => {
-    let found = null;
-    model.traverse(child => { if (!found && child.isBone && pattern.test(child.name)) found = child; });
+  const findBones = (model, patterns) => {
+    const found = [];
+    model.traverse(child => {
+      if (child.isBone && patterns.some(pattern => pattern.test(child.name))) found.push(child);
+    });
     return found;
   };
   const refreshAvatarVisibility = () => {
-    const showFemale = currentAvatar === 'female-suzuka' && femaleRig && !femaleLoadFailed;
-    maleParts.forEach(part => { part.visible = !showFemale; });
-    femaleContainer.visible = Boolean(showFemale);
+    const showModel = currentAvatar !== 'male-classic' && modelRig?.avatar === currentAvatar;
+    maleParts.forEach(part => { part.visible = !showModel; });
+    modelContainer.visible = Boolean(showModel);
   };
 
-  function ensureFemaleAvatar() {
-    if (femaleRig || femaleLoading || femaleLoadFailed) return;
-    femaleLoading = true;
-    loadFemaleAvatarTemplate().then(template => {
+  function ensureModelAvatar(avatar) {
+    if (modelRig?.avatar === avatar || loadingAvatar === avatar || failedAvatars.has(avatar)) return;
+    const version = loadVersion;
+    loadingAvatar = avatar;
+    loadAvatarTemplate(avatar).then(template => {
+      if (currentAvatar !== avatar || version !== loadVersion) return;
       const model = cloneSkeleton(template);
-      model.rotation.y = Math.PI;
-      model.scale.setScalar(1.76);
+      // The GLB characters face +Z, matching the procedural character and
+      // Math.atan2(velocityX, velocityZ) used by the movement controller.
+      model.rotation.y = 0;
+      model.updateMatrixWorld(true);
+      const sourceBounds = new THREE.Box3().setFromObject(model);
+      const sourceHeight = Math.max(.001, sourceBounds.getSize(new THREE.Vector3()).y);
+      model.scale.setScalar(2.02 / sourceHeight);
       model.updateMatrixWorld(true);
       const bounds = new THREE.Box3().setFromObject(model);
       const center = bounds.getCenter(new THREE.Vector3());
@@ -357,22 +377,28 @@ function makeCharacter(room) {
         child.castShadow = true; child.receiveShadow = true;
         if (child.material?.map) child.material.map.anisotropy = 8;
       });
-      femaleContainer.add(model);
+      modelContainer.clear();
+      modelContainer.add(model);
       const bones = {
-        leftArm: findBone(model, /^Arm_L_/), rightArm: findBone(model, /^Arm_R_/),
-        leftThigh: findBone(model, /^Thigh_L_/), rightThigh: findBone(model, /^Thigh_R_/),
-        leftKnee: findBone(model, /^Knee_L_/), rightKnee: findBone(model, /^Knee_R_/),
-        head: findBone(model, /^Head_/),
+        leftArm: findBones(model, [/^Arm_L_/, /^upper_armL_/, /^j_ude_l_wj_/]),
+        rightArm: findBones(model, [/^Arm_R_/, /^upper_armR_/, /^j_ude_r_wj_/]),
+        leftThigh: findBones(model, [/^Thigh_L_/, /^thighL_/, /^j_momo_l_wj_/]),
+        rightThigh: findBones(model, [/^Thigh_R_/, /^thighR_/, /^j_momo_r_wj_/]),
+        leftKnee: findBones(model, [/^Knee_L_/, /^shinL_/, /^j_sune_l_wj_/]),
+        rightKnee: findBones(model, [/^Knee_R_/, /^shinR_/, /^j_sune_r_wj_/]),
+        head: findBones(model, [/^Head_/, /^spine006_/, /^j_kao_wj_/]),
+        chest: findBones(model, [/^Chest_/, /^spine003_/, /^j_mune_wj_/]),
       };
-      const defaults = new Map(Object.values(bones).filter(Boolean).map(bone => [bone, bone.quaternion.clone()]));
-      femaleRig = { bones, defaults };
-      femaleLoading = false;
+      const defaults = new Map(Object.values(bones).flat().map(bone => [bone, bone.quaternion.clone()]));
+      modelRig = { avatar, model, bones, defaults };
+      loadingAvatar = null;
       refreshAvatarVisibility();
     }).catch(error => {
-      femaleLoading = false;
-      femaleLoadFailed = true;
+      if (version !== loadVersion) return;
+      loadingAvatar = null;
+      failedAvatars.add(avatar);
       refreshAvatarVisibility();
-      console.warn('Không tải được avatar nữ:', error);
+      console.warn(`Không tải được avatar ${avatar}:`, error);
     });
   }
 
@@ -385,10 +411,13 @@ function makeCharacter(room) {
   let currentName = '';
   let currentRole = '';
   let currentGender = 'male';
-  function setAppearance(name, role, gender = 'male', avatar = gender === 'female' ? 'female-suzuka' : 'male-classic') {
+  function setAppearance(name, role, gender = 'male', avatar = 'male-classic') {
+    const selected = getAvatarOption(avatar);
+    gender = selected.gender; avatar = selected.id;
     if (name === currentName && role === currentRole && gender === currentGender && avatar === currentAvatar) return;
+    if (avatar !== currentAvatar) { loadVersion++; loadingAvatar = null; }
     currentName = name; currentRole = role; currentGender = gender; currentAvatar = avatar;
-    if (currentAvatar === 'female-suzuka') ensureFemaleAvatar();
+    if (currentAvatar !== 'male-classic') ensureModelAvatar(currentAvatar);
     refreshAvatarVisibility();
     navy.color.setHex(role === 'teacher' ? 0x9c6f82 : 0x547f96);
     glasses.visible = role === 'teacher';
@@ -399,15 +428,20 @@ function makeCharacter(room) {
     nameTexture.needsUpdate = true;
   }
   const extraRotation = new THREE.Quaternion();
+  const targetRotation = new THREE.Quaternion();
   const extraEuler = new THREE.Euler();
-  function poseBone(bone, x = 0, y = 0, z = 0) {
-    if (!bone || !femaleRig?.defaults.has(bone)) return;
+  function poseBones(bones, x = 0, y = 0, z = 0, blend = 1) {
     extraRotation.setFromEuler(extraEuler.set(x, y, z));
-    bone.quaternion.copy(femaleRig.defaults.get(bone)).multiply(extraRotation);
+    for (const bone of bones || []) {
+      const base = modelRig?.defaults.get(bone);
+      if (!base) continue;
+      targetRotation.copy(base).multiply(extraRotation);
+      bone.quaternion.slerp(targetRotation, blend);
+    }
   }
   function animate({ walking, phase, stride = 0, seated = false, dt, now }) {
-    const female = currentAvatar === 'female-suzuka' && femaleRig && !femaleLoadFailed;
-    const targetY = female && seated ? -0.24 : walking ? Math.abs(Math.sin(phase)) * 0.055 * stride : female ? Math.sin(now * .0018) * .008 : 0;
+    const usingModel = currentAvatar !== 'male-classic' && modelRig?.avatar === currentAvatar;
+    const targetY = usingModel && seated ? -0.28 : walking ? Math.abs(Math.sin(phase)) * 0.055 * stride : usingModel ? Math.sin(now * .0018) * .009 : 0;
     body.position.y += (targetY - body.position.y) * (1 - Math.exp(-dt * 14));
 
     const swing = walking ? Math.sin(phase) * stride : 0;
@@ -416,16 +450,20 @@ function makeCharacter(room) {
     legs[0].rotation.x += (((seated ? -1.2 : 0) - swing * .47) - legs[0].rotation.x) * .25;
     legs[1].rotation.x += (((seated ? -1.2 : 0) + swing * .47) - legs[1].rotation.x) * .25;
 
-    if (!femaleRig) return;
-    const { bones } = femaleRig;
+    if (!usingModel) return;
+    const { bones, model } = modelRig;
     const idle = Math.sin(now * .0015);
-    poseBone(bones.leftArm, swing * .42 + idle * .018, 0, seated ? .08 : 0);
-    poseBone(bones.rightArm, -swing * .42 - idle * .018, 0, seated ? -.08 : 0);
-    poseBone(bones.leftThigh, seated ? -1.05 : -swing * .48);
-    poseBone(bones.rightThigh, seated ? -1.05 : swing * .48);
-    poseBone(bones.leftKnee, seated ? 1.28 : Math.max(0, swing) * .28);
-    poseBone(bones.rightKnee, seated ? 1.28 : Math.max(0, -swing) * .28);
-    poseBone(bones.head, 0, idle * .035, idle * .012);
+    const blend = 1 - Math.exp(-dt * 12);
+    const armDrop = seated ? 1.18 : 1.05;
+    poseBones(bones.leftArm, swing * .48 + idle * .02, 0, -armDrop, blend);
+    poseBones(bones.rightArm, -swing * .48 - idle * .02, 0, armDrop, blend);
+    poseBones(bones.leftThigh, seated ? -1.05 : -swing * .5, 0, 0, blend);
+    poseBones(bones.rightThigh, seated ? -1.05 : swing * .5, 0, 0, blend);
+    poseBones(bones.leftKnee, seated ? 1.28 : Math.max(0, swing) * .3, 0, 0, blend);
+    poseBones(bones.rightKnee, seated ? 1.28 : Math.max(0, -swing) * .3, 0, 0, blend);
+    poseBones(bones.head, 0, idle * .035, idle * .012, blend);
+    poseBones(bones.chest, idle * .008, 0, walking ? -swing * .035 : idle * .008, blend);
+    model.rotation.z += (((walking ? -swing * .025 : idle * .009)) - model.rotation.z) * blend;
   }
   setAppearance('Sinh viên', 'student', 'male', 'male-classic');
   return { root, body, arms, legs, setAppearance, animate };
@@ -485,7 +523,7 @@ export function createClassroom(canvas, { onArtwork, onQuiz, onNearby, onSeat = 
   addWallDecor(room);
   addBoard(room);
   addWindow(room, 5.12, 3.11);
-  wallSign(room, 'Văn hóa soi đường cho quốc dân đi', 4.98, 4.65, -6.18, 6.05, 0.48, '#47766b', 76);
+  wallSign(room, 'AI hỗ trợ con người · Con người chịu trách nhiệm', 4.98, 4.65, -6.18, 6.05, 0.48, '#47766b', 58);
 
   const artMeshes = [];
   const leftZ = [-4.94, -2.55, -0.16, 2.23, 4.62];

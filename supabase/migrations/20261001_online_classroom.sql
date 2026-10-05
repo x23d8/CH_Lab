@@ -8,8 +8,8 @@ create table if not exists public.hcm_members (
   user_id uuid primary key references auth.users(id) on delete cascade,
   name text not null check (char_length(name) between 1 and 32),
   role text not null check (role in ('student', 'teacher')),
-  gender text not null default 'male' check (gender in ('male', 'female')),
-  avatar text not null default 'male-classic' check (avatar in ('male-classic', 'female-suzuka')),
+  gender text not null default 'male',
+  avatar text not null default 'male-classic',
   room_no integer not null check (room_no between 1 and 9999),
   seat_id integer check (seat_id between 0 and 9),
   x double precision not null default 4.6,
@@ -17,6 +17,12 @@ create table if not exists public.hcm_members (
   rotation double precision not null default 0,
   last_seen timestamptz not null default clock_timestamp()
 );
+alter table public.hcm_members drop constraint if exists hcm_members_gender_check;
+alter table public.hcm_members add constraint hcm_members_gender_check check (gender in ('male', 'female', 'other'));
+alter table public.hcm_members drop constraint if exists hcm_members_avatar_check;
+alter table public.hcm_members add constraint hcm_members_avatar_check check (avatar in (
+  'male-classic', 'agnes-tachyon', 'chikawa', 'megumin', 'miku', 'professor-layton', 'female-suzuka', 'super-creek'
+));
 create unique index if not exists hcm_room_seat_unique on public.hcm_members(room_no, seat_id) where seat_id is not null;
 create index if not exists hcm_members_active_room on public.hcm_members(room_no, last_seen desc);
 
@@ -253,8 +259,11 @@ create or replace function hcm_private.hcm_join_profile(p_name text, p_room inte
 returns jsonb language plpgsql security definer set search_path = '' as $$
 declare v_gender text := lower(coalesce(p_gender, '')); v_avatar text := lower(coalesce(p_avatar, ''));
 begin
-  if v_gender not in ('male', 'female') then raise exception 'Giới tính không hợp lệ.'; end if;
-  if (v_gender = 'male' and v_avatar <> 'male-classic') or (v_gender = 'female' and v_avatar <> 'female-suzuka') then
+  if v_gender not in ('male', 'female', 'other') then raise exception 'Giới tính không hợp lệ.'; end if;
+  if (v_gender, v_avatar) not in (
+    ('male', 'male-classic'), ('female', 'agnes-tachyon'), ('other', 'chikawa'), ('female', 'megumin'),
+    ('female', 'miku'), ('male', 'professor-layton'), ('female', 'female-suzuka'), ('female', 'super-creek')
+  ) then
     raise exception 'Avatar không phù hợp.';
   end if;
   perform hcm_private.hcm_join_room(p_name, p_room);
@@ -382,6 +391,21 @@ begin
 end;
 $$;
 
+create or replace function hcm_private.hcm_reset_exam()
+returns jsonb language plpgsql security definer set search_path = '' as $$
+declare v_round integer;
+begin
+  if not exists(select 1 from public.hcm_members where user_id = auth.uid() and role = 'teacher' and last_seen > clock_timestamp() - interval '60 seconds') then
+    raise exception 'Chỉ giảng viên mới reset được bảng xếp hạng.';
+  end if;
+  perform pg_advisory_xact_lock(2026001);
+  select round into v_round from public.hcm_exam where id = 1 for update;
+  delete from public.hcm_exam_participants where round = v_round;
+  update public.hcm_exam set phase = 'idle', started_at = null, ends_at = null where id = 1;
+  return hcm_private.hcm_state();
+end;
+$$;
+
 create or replace function hcm_private.hcm_leave()
 returns void language plpgsql security definer set search_path = '' as $$
 begin
@@ -399,6 +423,7 @@ create or replace function public.hcm_stand() returns jsonb language sql securit
 create or replace function public.hcm_start_exam() returns jsonb language sql security invoker set search_path = '' as $$ select hcm_private.hcm_start_exam(); $$;
 create or replace function public.hcm_submit_exam(p_answers jsonb) returns jsonb language sql security invoker set search_path = '' as $$ select hcm_private.hcm_submit_exam(p_answers); $$;
 create or replace function public.hcm_finish_exam() returns jsonb language sql security invoker set search_path = '' as $$ select hcm_private.hcm_finish_exam(); $$;
+create or replace function public.hcm_reset_exam() returns jsonb language sql security invoker set search_path = '' as $$ select hcm_private.hcm_reset_exam(); $$;
 create or replace function public.hcm_leave() returns void language sql security invoker set search_path = '' as $$ select hcm_private.hcm_leave(); $$;
 
 revoke all on schema hcm_private from public;
@@ -407,11 +432,11 @@ revoke all on all functions in schema hcm_private from public;
 grant execute on function hcm_private.hcm_channel_access(text), hcm_private.hcm_join(text), hcm_private.hcm_join_room(text, integer), hcm_private.hcm_join_profile(text, integer, text, text), hcm_private.hcm_state(),
   hcm_private.hcm_touch(double precision, double precision, double precision), hcm_private.hcm_sit(integer),
   hcm_private.hcm_stand(), hcm_private.hcm_start_exam(), hcm_private.hcm_submit_exam(jsonb),
-  hcm_private.hcm_finish_exam(), hcm_private.hcm_leave() to authenticated;
+  hcm_private.hcm_finish_exam(), hcm_private.hcm_reset_exam(), hcm_private.hcm_leave() to authenticated;
 revoke all on function public.hcm_join(text), public.hcm_join_room(text, integer), public.hcm_join_profile(text, integer, text, text), public.hcm_state(), public.hcm_touch(double precision, double precision, double precision),
-  public.hcm_sit(integer), public.hcm_stand(), public.hcm_start_exam(), public.hcm_submit_exam(jsonb), public.hcm_finish_exam(), public.hcm_leave() from public, anon;
+  public.hcm_sit(integer), public.hcm_stand(), public.hcm_start_exam(), public.hcm_submit_exam(jsonb), public.hcm_finish_exam(), public.hcm_reset_exam(), public.hcm_leave() from public, anon;
 grant execute on function public.hcm_join(text), public.hcm_join_room(text, integer), public.hcm_join_profile(text, integer, text, text), public.hcm_state(), public.hcm_touch(double precision, double precision, double precision),
-  public.hcm_sit(integer), public.hcm_stand(), public.hcm_start_exam(), public.hcm_submit_exam(jsonb), public.hcm_finish_exam(), public.hcm_leave() to authenticated;
+  public.hcm_sit(integer), public.hcm_stand(), public.hcm_start_exam(), public.hcm_submit_exam(jsonb), public.hcm_finish_exam(), public.hcm_reset_exam(), public.hcm_leave() to authenticated;
 
 drop policy if exists "hcm room receive" on realtime.messages;
 drop policy if exists "hcm room publish" on realtime.messages;

@@ -85,7 +85,7 @@ export function createQuiz(root) {
     });
     scoreText.textContent = `${score} điểm`;
     feedback.className = `quiz-feedback ${correct ? 'is-correct' : 'is-incorrect'}`;
-    feedback.textContent = `${correct ? 'Chính xác!' : 'Chưa đúng.'} ${current.explanation} (${current.source})`;
+    feedback.textContent = `${correct ? 'Chính xác!' : 'Chưa đúng.'} ${current.explanation}`;
     nextButton.textContent = index === quizQuestions.length - 1 ? 'Xem kết quả →' : 'Câu tiếp theo →';
     nextButton.classList.remove('hidden');
     setFlight(index + 1);
@@ -105,7 +105,7 @@ export function createQuiz(root) {
     result.textContent = `${score} / ${quizQuestions.length}`;
     resultNote.textContent = score >= 7
       ? 'Bạn đã nắm chắc các ý chính. Hãy thử giải thích lại một ý bằng ví dụ của mình.'
-      : 'Hãy xem lại các tranh trên tường rồi thử thêm một lượt. Mỗi bức tranh có phần tóm tắt và nguồn slide.';
+      : 'Hãy xem lại các chủ đề trên tường rồi thử thêm một lượt. Mỗi chủ đề có phần tóm tắt và đường dẫn tới nguồn chính thức.';
   }
 
   nextButton.addEventListener('click', next);
