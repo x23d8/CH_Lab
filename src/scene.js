@@ -1,5 +1,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { clone as cloneSkeleton } from 'three/addons/utils/SkeletonUtils.js';
 import { artworks } from './presentation-art.js';
 import { deskPositions, seatPosition } from './classroom-config.js';
 import { approachMotionPose, createMotionBuffer, predictMotionPose, pushMotionSample } from './remote-motion.js';
@@ -18,6 +20,16 @@ gradient.minFilter = THREE.NearestFilter;
 const mat = (color, options = {}) => new THREE.MeshToonMaterial({ color, gradientMap: gradient, ...options });
 const materials = Object.fromEntries(Object.entries(palette).map(([key, value]) => [key, mat(value)]));
 const flat = (color, options = {}) => new THREE.MeshBasicMaterial({ color, ...options });
+
+const femaleAvatarUrl = new URL('../models/silence_suzuka_chibi.glb', import.meta.url).href;
+let femaleAvatarTemplatePromise;
+
+function loadFemaleAvatarTemplate() {
+  if (!femaleAvatarTemplatePromise) {
+    femaleAvatarTemplatePromise = new GLTFLoader().loadAsync(femaleAvatarUrl).then(gltf => gltf.scene);
+  }
+  return femaleAvatarTemplatePromise;
+}
 
 function mesh(geometry, material, parent, x = 0, y = 0, z = 0) {
   const item = new THREE.Mesh(geometry, material);
@@ -309,6 +321,61 @@ function makeCharacter(room) {
     box(leg, 0, -0.23, 0, 0.23, 0.47, 0.25, materials.cream);
     const foot = sphere(leg, 0, -0.49, 0.13, 0.17, shoe); foot.scale.set(1, 0.58, 1.38); legs.push(leg);
   });
+  const maleParts = [...body.children];
+  const femaleContainer = new THREE.Group();
+  body.add(femaleContainer);
+  femaleContainer.visible = false;
+  let femaleRig = null;
+  let femaleLoading = false;
+  let femaleLoadFailed = false;
+  let currentAvatar = 'male-classic';
+
+  const findBone = (model, pattern) => {
+    let found = null;
+    model.traverse(child => { if (!found && child.isBone && pattern.test(child.name)) found = child; });
+    return found;
+  };
+  const refreshAvatarVisibility = () => {
+    const showFemale = currentAvatar === 'female-suzuka' && femaleRig && !femaleLoadFailed;
+    maleParts.forEach(part => { part.visible = !showFemale; });
+    femaleContainer.visible = Boolean(showFemale);
+  };
+
+  function ensureFemaleAvatar() {
+    if (femaleRig || femaleLoading || femaleLoadFailed) return;
+    femaleLoading = true;
+    loadFemaleAvatarTemplate().then(template => {
+      const model = cloneSkeleton(template);
+      model.rotation.y = Math.PI;
+      model.scale.setScalar(1.76);
+      model.updateMatrixWorld(true);
+      const bounds = new THREE.Box3().setFromObject(model);
+      const center = bounds.getCenter(new THREE.Vector3());
+      model.position.set(-center.x, -bounds.min.y, -center.z);
+      model.traverse(child => {
+        if (!child.isMesh) return;
+        child.castShadow = true; child.receiveShadow = true;
+        if (child.material?.map) child.material.map.anisotropy = 8;
+      });
+      femaleContainer.add(model);
+      const bones = {
+        leftArm: findBone(model, /^Arm_L_/), rightArm: findBone(model, /^Arm_R_/),
+        leftThigh: findBone(model, /^Thigh_L_/), rightThigh: findBone(model, /^Thigh_R_/),
+        leftKnee: findBone(model, /^Knee_L_/), rightKnee: findBone(model, /^Knee_R_/),
+        head: findBone(model, /^Head_/),
+      };
+      const defaults = new Map(Object.values(bones).filter(Boolean).map(bone => [bone, bone.quaternion.clone()]));
+      femaleRig = { bones, defaults };
+      femaleLoading = false;
+      refreshAvatarVisibility();
+    }).catch(error => {
+      femaleLoading = false;
+      femaleLoadFailed = true;
+      refreshAvatarVisibility();
+      console.warn('Không tải được avatar nữ:', error);
+    });
+  }
+
   const shadow = mesh(new THREE.CircleGeometry(0.65, 32), new THREE.MeshBasicMaterial({ color: 0x4f776a, transparent: true, opacity: 0.15, depthWrite: false }), root, 0, 0.018, 0);
   shadow.rotation.x = -Math.PI / 2; shadow.castShadow = false;
   const nameCanvas = document.createElement('canvas'); nameCanvas.width = 384; nameCanvas.height = 80;
@@ -317,9 +384,12 @@ function makeCharacter(room) {
   label.position.set(0, 2.43, 0); label.scale.set(1.9, .4, 1); root.add(label);
   let currentName = '';
   let currentRole = '';
-  function setAppearance(name, role) {
-    if (name === currentName && role === currentRole) return;
-    currentName = name; currentRole = role;
+  let currentGender = 'male';
+  function setAppearance(name, role, gender = 'male', avatar = gender === 'female' ? 'female-suzuka' : 'male-classic') {
+    if (name === currentName && role === currentRole && gender === currentGender && avatar === currentAvatar) return;
+    currentName = name; currentRole = role; currentGender = gender; currentAvatar = avatar;
+    if (currentAvatar === 'female-suzuka') ensureFemaleAvatar();
+    refreshAvatarVisibility();
     navy.color.setHex(role === 'teacher' ? 0x9c6f82 : 0x547f96);
     glasses.visible = role === 'teacher';
     const c = nameCanvas.getContext('2d'); c.clearRect(0, 0, 384, 80);
@@ -328,8 +398,37 @@ function makeCharacter(room) {
     c.font = 'bold 35px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(name.slice(0, 24), 192, 40, 342);
     nameTexture.needsUpdate = true;
   }
-  setAppearance('Sinh viên', 'student');
-  return { root, body, arms, legs, setAppearance };
+  const extraRotation = new THREE.Quaternion();
+  const extraEuler = new THREE.Euler();
+  function poseBone(bone, x = 0, y = 0, z = 0) {
+    if (!bone || !femaleRig?.defaults.has(bone)) return;
+    extraRotation.setFromEuler(extraEuler.set(x, y, z));
+    bone.quaternion.copy(femaleRig.defaults.get(bone)).multiply(extraRotation);
+  }
+  function animate({ walking, phase, stride = 0, seated = false, dt, now }) {
+    const female = currentAvatar === 'female-suzuka' && femaleRig && !femaleLoadFailed;
+    const targetY = female && seated ? -0.24 : walking ? Math.abs(Math.sin(phase)) * 0.055 * stride : female ? Math.sin(now * .0018) * .008 : 0;
+    body.position.y += (targetY - body.position.y) * (1 - Math.exp(-dt * 14));
+
+    const swing = walking ? Math.sin(phase) * stride : 0;
+    arms[0].rotation.x += (swing * .48 - arms[0].rotation.x) * .25;
+    arms[1].rotation.x += (-swing * .48 - arms[1].rotation.x) * .25;
+    legs[0].rotation.x += (((seated ? -1.2 : 0) - swing * .47) - legs[0].rotation.x) * .25;
+    legs[1].rotation.x += (((seated ? -1.2 : 0) + swing * .47) - legs[1].rotation.x) * .25;
+
+    if (!femaleRig) return;
+    const { bones } = femaleRig;
+    const idle = Math.sin(now * .0015);
+    poseBone(bones.leftArm, swing * .42 + idle * .018, 0, seated ? .08 : 0);
+    poseBone(bones.rightArm, -swing * .42 - idle * .018, 0, seated ? -.08 : 0);
+    poseBone(bones.leftThigh, seated ? -1.05 : -swing * .48);
+    poseBone(bones.rightThigh, seated ? -1.05 : swing * .48);
+    poseBone(bones.leftKnee, seated ? 1.28 : Math.max(0, swing) * .28);
+    poseBone(bones.rightKnee, seated ? 1.28 : Math.max(0, -swing) * .28);
+    poseBone(bones.head, 0, idle * .035, idle * .012);
+  }
+  setAppearance('Sinh viên', 'student', 'male', 'male-classic');
+  return { root, body, arms, legs, setAppearance, animate };
 }
 
 export function createClassroom(canvas, { onArtwork, onQuiz, onNearby, onSeat = () => {}, onPose = () => {} }) {
@@ -452,7 +551,7 @@ export function createClassroom(canvas, { onArtwork, onQuiz, onNearby, onSeat = 
     for (const player of players) {
       if (player.seatId !== null) desks[player.seatId].paper.visible = true;
       if (player.id === selfId) {
-        character.setAppearance(player.name, player.role);
+        character.setAppearance(player.name, player.role, player.gender, player.avatar);
         if (!selfPoseInitialized || player.seatId !== selfSeatId) {
           selfPoseInitialized = true;
           selfSeatId = player.seatId;
@@ -470,7 +569,7 @@ export function createClassroom(canvas, { onArtwork, onQuiz, onNearby, onSeat = 
         avatar.motion = createMotionBuffer(player, performance.now());
         remotePlayers.set(player.id, avatar);
       }
-      avatar.setAppearance(player.name, player.role);
+      avatar.setAppearance(player.name, player.role, player.gender, player.avatar);
       updateRemoteAvatar(avatar, player);
     }
     for (const [id, avatar] of remotePlayers) {
@@ -616,15 +715,9 @@ export function createClassroom(canvas, { onArtwork, onQuiz, onNearby, onSeat = 
       }
       walkTime += dt * 9;
       const stride = Math.min(1, Math.hypot(velocityX, velocityZ) / 3.05);
-      character.body.position.y = Math.abs(Math.sin(walkTime)) * 0.055 * stride;
-      character.arms[0].rotation.x = Math.sin(walkTime) * 0.48 * stride;
-      character.arms[1].rotation.x = -Math.sin(walkTime) * 0.48 * stride;
-      character.legs[0].rotation.x = -Math.sin(walkTime) * 0.47 * stride;
-      character.legs[1].rotation.x = Math.sin(walkTime) * 0.47 * stride;
+      character.animate({ walking: true, phase: walkTime, stride, seated: false, dt, now });
     } else {
-      character.body.position.y *= 0.85;
-      character.arms.forEach(a => a.rotation.x *= 0.8);
-      character.legs.forEach(l => l.rotation.x += ((selfSeatId !== null ? -1.2 : 0) - l.rotation.x) * 0.2);
+      character.animate({ walking: false, phase: walkTime, seated: selfSeatId !== null, dt, now });
     }
     for (const avatar of remotePlayers.values()) {
       if (!avatar.target) continue;
@@ -642,16 +735,8 @@ export function createClassroom(canvas, { onArtwork, onQuiz, onNearby, onSeat = 
       const walking = seatId === null && Math.hypot(avatar.root.position.x - previousX, avatar.root.position.z - previousZ) > .004;
       if (walking) {
         avatar.walkTime += dt * 9;
-        avatar.body.position.y = Math.abs(Math.sin(avatar.walkTime)) * .055;
-        avatar.arms[0].rotation.x = Math.sin(avatar.walkTime) * .48;
-        avatar.arms[1].rotation.x = -Math.sin(avatar.walkTime) * .48;
-        avatar.legs[0].rotation.x = -Math.sin(avatar.walkTime) * .47;
-        avatar.legs[1].rotation.x = Math.sin(avatar.walkTime) * .47;
-      } else {
-        avatar.body.position.y *= .85;
-        avatar.arms.forEach(arm => { arm.rotation.x *= .8; });
-        avatar.legs.forEach(leg => { leg.rotation.x += ((seatId !== null ? -1.2 : 0) - leg.rotation.x) * .2; });
       }
+      avatar.animate({ walking, phase: avatar.walkTime, stride: walking ? 1 : 0, seated: seatId !== null, dt, now });
     }
     if (selfId && selfSeatId === null && now - lastPoseFrame > 50) {
       onPose({
@@ -672,6 +757,9 @@ export function createClassroom(canvas, { onArtwork, onQuiz, onNearby, onSeat = 
     setActive(value) { active = value; if (!active) keys.clear(); },
     resetCamera() { camera.position.set(19, 18, 23); controls.target.set(0, 1.45, 0); camera.zoom = 0.9; camera.updateProjectionMatrix(); controls.update(); },
     inspectNearby() { activateInteraction(nearestInteraction()); },
+    setProfile({ name = 'Sinh viên', gender = 'male', avatar = 'male-classic' }) {
+      character.setAppearance(name, 'student', gender, avatar);
+    },
     syncPlayers,
     syncPose,
     getSeatId() { return selfSeatId; },

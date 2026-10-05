@@ -6,6 +6,7 @@ import { PGlite } from '@electric-sql/pglite';
 const migration = await readFile(new URL('../supabase/migrations/20261001_online_classroom.sql', import.meta.url), 'utf8');
 const roomSelectionMigration = await readFile(new URL('../supabase/migrations/20261005_room_selection.sql', import.meta.url), 'utf8');
 const examQuestionsMigration = await readFile(new URL('../supabase/migrations/20261005_exam_questions_10.sql', import.meta.url), 'utf8');
+const avatarProfilesMigration = await readFile(new URL('../supabase/migrations/20261006_avatar_profiles.sql', import.meta.url), 'utf8');
 const id = number => `00000000-0000-4000-8000-${String(number).padStart(12, '0')}`;
 
 test('migration: phân 10 người/phòng và dùng một lượt kiểm tra cho mọi phòng', async () => {
@@ -27,6 +28,7 @@ test('migration: phân 10 người/phòng và dùng một lượt kiểm tra cho
     await db.exec(migration);
     await db.exec(roomSelectionMigration);
     await db.exec(examQuestionsMigration);
+    await db.exec(avatarProfilesMigration);
     const call = async (number, query) => {
       await db.query(`select set_config('request.jwt.claim.sub', $1, false)`, [id(number)]);
       return (await db.query(query)).rows[0];
@@ -56,6 +58,9 @@ test('migration: phân 10 người/phòng và dùng một lượt kiểm tra cho
     const movedRoom = (await call(12, "select public.hcm_join_room('Đổi phòng 9', 9) as state")).state;
     assert.equal(movedRoom.me.roomNo, 9);
     assert.equal(movedRoom.me.seatId, null);
+    const femaleProfile = (await call(12, "select public.hcm_join_profile('Hồ sơ nữ', 9, 'female', 'female-suzuka') as state")).state;
+    assert.equal(femaleProfile.me.gender, 'female');
+    assert.equal(femaleProfile.me.avatar, 'female-suzuka');
     await assert.rejects(call(11, 'select * from public.hcm_exam_questions'), /permission denied/);
     await assert.rejects(call(2, 'select public.hcm_start_exam()'), /Chỉ giảng viên/);
 

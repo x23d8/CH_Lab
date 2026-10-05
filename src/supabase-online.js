@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 function friendlyError(error) {
   const message = error?.message || String(error);
   if (/anonymous|signup|signups|disabled/i.test(message)) return 'Supabase chưa bật Anonymous Sign-Ins trong Auth Settings.';
+  if (/hcm_join_profile/i.test(message)) return 'Supabase chưa có hồ sơ avatar. Hãy chạy migration 20261006_avatar_profiles.sql.';
   if (/hcm_join_room/i.test(message)) return 'Supabase chưa có cơ chế chọn phòng. Hãy chạy migration 20261005_room_selection.sql.';
   if (/Could not find the function|schema cache|404|hcm_join/i.test(message)) return 'Chưa cài migration SQL cho lớp học trên Supabase.';
   return message;
@@ -14,6 +15,8 @@ export function createSupabaseOnlineClient(url, key, onMessage, onStatus) {
   });
   let desiredName = '';
   let desiredRoom = null;
+  let desiredGender = 'male';
+  let desiredAvatar = 'male-classic';
   let userId = null;
   let roomNo = null;
   let roomChannel = null;
@@ -75,7 +78,10 @@ export function createSupabaseOnlineClient(url, key, onMessage, onStatus) {
       if (!meta || !meta.id) continue;
       const old = peers.get(id);
       next.set(id, {
-        id: meta.id, name: meta.name, role: meta.role, seatId: meta.seatId ?? null,
+        id: meta.id, name: meta.name, role: meta.role,
+        gender: meta.gender === 'female' ? 'female' : 'male',
+        avatar: meta.avatar === 'female-suzuka' ? 'female-suzuka' : 'male-classic',
+        seatId: meta.seatId ?? null,
         x: old && old.seatId === (meta.seatId ?? null) ? old.x : meta.x ?? 4.6,
         z: old && old.seatId === (meta.seatId ?? null) ? old.z : meta.z ?? 3.7,
         rotation: old && old.seatId === (meta.seatId ?? null) ? old.rotation : meta.rotation ?? 0,
@@ -94,7 +100,7 @@ export function createSupabaseOnlineClient(url, key, onMessage, onStatus) {
     const own = latestState.players.find(player => player.id === userId);
     if (own?.seatId !== null && own?.seatId !== undefined) currentPose = { x: own.x, z: own.z, rotation: own.rotation, vx: 0, vz: 0 };
     await roomChannel.track({
-      id: userId, name: me.name, role: me.role, seatId: me.seatId,
+      id: userId, name: me.name, role: me.role, gender: me.gender, avatar: me.avatar, seatId: me.seatId,
       x: currentPose.x, z: currentPose.z, rotation: currentPose.rotation,
       vx: currentPose.vx, vz: currentPose.vz,
     });
@@ -138,7 +144,10 @@ export function createSupabaseOnlineClient(url, key, onMessage, onStatus) {
     if (retryTimer || stopped) return;
     connected = false;
     onStatus('offline');
-    retryTimer = window.setTimeout(() => { retryTimer = null; connect(desiredName, desiredRoom); }, delay);
+    retryTimer = window.setTimeout(() => {
+      retryTimer = null;
+      connect(desiredName, desiredRoom, { gender: desiredGender, avatar: desiredAvatar });
+    }, delay);
   }
 
   function subscribe(channel) {
@@ -212,9 +221,14 @@ export function createSupabaseOnlineClient(url, key, onMessage, onStatus) {
     pollTimer = window.setInterval(refresh, 4000);
   }
 
-  async function connect(nextName, nextRoomNo = null) {
+  async function connect(nextName, nextRoomNo = null, profile = {}) {
+    const previousProfile = latestState?.me
+      ? { gender: latestState.me.gender, avatar: latestState.me.avatar }
+      : { gender: desiredGender, avatar: desiredAvatar };
     desiredName = nextName.trim();
     desiredRoom = Number.isInteger(nextRoomNo) && nextRoomNo >= 1 && nextRoomNo <= 9999 ? nextRoomNo : null;
+    desiredGender = profile.gender === 'female' ? 'female' : 'male';
+    desiredAvatar = desiredGender === 'female' && profile.avatar === 'female-suzuka' ? 'female-suzuka' : 'male-classic';
     if (!desiredName || joining || stopped) return;
     const wasConnected = connected;
     let joinedRoom = false;
@@ -232,7 +246,9 @@ export function createSupabaseOnlineClient(url, key, onMessage, onStatus) {
         user = data.user;
       }
       userId = user.id;
-      const state = await rpc('hcm_join_room', { p_name: desiredName, p_room: desiredRoom });
+      const state = await rpc('hcm_join_profile', {
+        p_name: desiredName, p_room: desiredRoom, p_gender: desiredGender, p_avatar: desiredAvatar,
+      });
       joinedRoom = true;
       const previousExam = latestState?.exam;
       latestState = state;
@@ -241,6 +257,7 @@ export function createSupabaseOnlineClient(url, key, onMessage, onStatus) {
       await trackPresence();
       onStatus('online');
       onMessage({ type: 'welcome', id: userId, role: state.me.role, name: state.me.name,
+        gender: state.me.gender, avatar: state.me.avatar,
         roomNo: state.me.roomNo, serverNow: state.serverNow, examMinutes: 15 });
       consumeState(state, previousExam);
       startIntervals();
@@ -249,6 +266,10 @@ export function createSupabaseOnlineClient(url, key, onMessage, onStatus) {
       report(error);
       if (wasConnected && !joinedRoom && roomChannel && globalChannel) {
         desiredRoom = roomNo;
+        desiredGender = previousProfile.gender === 'female' ? 'female' : 'male';
+        desiredAvatar = desiredGender === 'female' && previousProfile.avatar === 'female-suzuka'
+          ? 'female-suzuka'
+          : 'male-classic';
         connected = true;
         onStatus('online');
       } else {

@@ -8,6 +8,8 @@ create table if not exists public.hcm_members (
   user_id uuid primary key references auth.users(id) on delete cascade,
   name text not null check (char_length(name) between 1 and 32),
   role text not null check (role in ('student', 'teacher')),
+  gender text not null default 'male' check (gender in ('male', 'female')),
+  avatar text not null default 'male-classic' check (avatar in ('male-classic', 'female-suzuka')),
   room_no integer not null check (room_no between 1 and 9999),
   seat_id integer check (seat_id between 0 and 9),
   x double precision not null default 4.6,
@@ -166,7 +168,7 @@ begin
   select count(*), count(*) filter (where role = 'student' and seat_id is not null), count(distinct room_no), count(*) filter (where room_no = v_member.room_no)
     into v_online, v_seated, v_rooms, v_room_occupancy
   from public.hcm_members where last_seen > clock_timestamp() - interval '60 seconds';
-  select coalesce(jsonb_agg(jsonb_build_object('id', m.user_id::text, 'name', m.name, 'role', m.role, 'x', m.x, 'z', m.z, 'rotation', m.rotation, 'seatId', m.seat_id) order by m.user_id), '[]'::jsonb)
+  select coalesce(jsonb_agg(jsonb_build_object('id', m.user_id::text, 'name', m.name, 'role', m.role, 'gender', m.gender, 'avatar', m.avatar, 'x', m.x, 'z', m.z, 'rotation', m.rotation, 'seatId', m.seat_id) order by m.user_id), '[]'::jsonb)
     into v_players from public.hcm_members m
     where m.room_no = v_member.room_no and m.last_seen > clock_timestamp() - interval '60 seconds';
   select count(*) into v_participant_count from public.hcm_exam_participants where round = v_exam.round;
@@ -189,7 +191,7 @@ begin
   end if;
   return jsonb_build_object(
     'serverNow', floor(extract(epoch from clock_timestamp()) * 1000)::bigint,
-    'me', jsonb_build_object('id', v_member.user_id::text, 'name', v_member.name, 'role', v_member.role, 'roomNo', v_member.room_no, 'seatId', v_member.seat_id, 'eligible', v_eligible, 'submitted', v_submitted),
+    'me', jsonb_build_object('id', v_member.user_id::text, 'name', v_member.name, 'role', v_member.role, 'gender', v_member.gender, 'avatar', v_member.avatar, 'roomNo', v_member.room_no, 'seatId', v_member.seat_id, 'eligible', v_eligible, 'submitted', v_submitted),
     'players', v_players,
     'counts', jsonb_build_object('online', v_online, 'seated', v_seated, 'rooms', v_rooms, 'roomOccupancy', v_room_occupancy, 'roomCapacity', 10),
     'exam', jsonb_build_object('phase', v_exam.phase, 'round', v_exam.round,
@@ -245,6 +247,20 @@ $$;
 create or replace function hcm_private.hcm_join(p_name text)
 returns jsonb language sql security definer set search_path = '' as $$
   select hcm_private.hcm_join_room(p_name, null);
+$$;
+
+create or replace function hcm_private.hcm_join_profile(p_name text, p_room integer, p_gender text, p_avatar text)
+returns jsonb language plpgsql security definer set search_path = '' as $$
+declare v_gender text := lower(coalesce(p_gender, '')); v_avatar text := lower(coalesce(p_avatar, ''));
+begin
+  if v_gender not in ('male', 'female') then raise exception 'Giới tính không hợp lệ.'; end if;
+  if (v_gender = 'male' and v_avatar <> 'male-classic') or (v_gender = 'female' and v_avatar <> 'female-suzuka') then
+    raise exception 'Avatar không phù hợp.';
+  end if;
+  perform hcm_private.hcm_join_room(p_name, p_room);
+  update public.hcm_members set gender = v_gender, avatar = v_avatar, last_seen = clock_timestamp() where user_id = auth.uid();
+  return hcm_private.hcm_state();
+end;
 $$;
 
 create or replace function hcm_private.hcm_touch(p_x double precision, p_z double precision, p_rotation double precision)
@@ -375,6 +391,7 @@ $$;
 
 create or replace function public.hcm_join(p_name text) returns jsonb language sql security invoker set search_path = '' as $$ select hcm_private.hcm_join(p_name); $$;
 create or replace function public.hcm_join_room(p_name text, p_room integer) returns jsonb language sql security invoker set search_path = '' as $$ select hcm_private.hcm_join_room(p_name, p_room); $$;
+create or replace function public.hcm_join_profile(p_name text, p_room integer, p_gender text, p_avatar text) returns jsonb language sql security invoker set search_path = '' as $$ select hcm_private.hcm_join_profile(p_name, p_room, p_gender, p_avatar); $$;
 create or replace function public.hcm_state() returns jsonb language sql security invoker set search_path = '' as $$ select hcm_private.hcm_state(); $$;
 create or replace function public.hcm_touch(p_x double precision, p_z double precision, p_rotation double precision) returns void language sql security invoker set search_path = '' as $$ select hcm_private.hcm_touch(p_x, p_z, p_rotation); $$;
 create or replace function public.hcm_sit(p_seat integer) returns jsonb language sql security invoker set search_path = '' as $$ select hcm_private.hcm_sit(p_seat); $$;
@@ -387,13 +404,13 @@ create or replace function public.hcm_leave() returns void language sql security
 revoke all on schema hcm_private from public;
 grant usage on schema hcm_private to authenticated;
 revoke all on all functions in schema hcm_private from public;
-grant execute on function hcm_private.hcm_channel_access(text), hcm_private.hcm_join(text), hcm_private.hcm_join_room(text, integer), hcm_private.hcm_state(),
+grant execute on function hcm_private.hcm_channel_access(text), hcm_private.hcm_join(text), hcm_private.hcm_join_room(text, integer), hcm_private.hcm_join_profile(text, integer, text, text), hcm_private.hcm_state(),
   hcm_private.hcm_touch(double precision, double precision, double precision), hcm_private.hcm_sit(integer),
   hcm_private.hcm_stand(), hcm_private.hcm_start_exam(), hcm_private.hcm_submit_exam(jsonb),
   hcm_private.hcm_finish_exam(), hcm_private.hcm_leave() to authenticated;
-revoke all on function public.hcm_join(text), public.hcm_join_room(text, integer), public.hcm_state(), public.hcm_touch(double precision, double precision, double precision),
+revoke all on function public.hcm_join(text), public.hcm_join_room(text, integer), public.hcm_join_profile(text, integer, text, text), public.hcm_state(), public.hcm_touch(double precision, double precision, double precision),
   public.hcm_sit(integer), public.hcm_stand(), public.hcm_start_exam(), public.hcm_submit_exam(jsonb), public.hcm_finish_exam(), public.hcm_leave() from public, anon;
-grant execute on function public.hcm_join(text), public.hcm_join_room(text, integer), public.hcm_state(), public.hcm_touch(double precision, double precision, double precision),
+grant execute on function public.hcm_join(text), public.hcm_join_room(text, integer), public.hcm_join_profile(text, integer, text, text), public.hcm_state(), public.hcm_touch(double precision, double precision, double precision),
   public.hcm_sit(integer), public.hcm_stand(), public.hcm_start_exam(), public.hcm_submit_exam(jsonb), public.hcm_finish_exam(), public.hcm_leave() to authenticated;
 
 drop policy if exists "hcm room receive" on realtime.messages;

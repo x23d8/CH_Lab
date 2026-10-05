@@ -16,6 +16,8 @@ export function createLanClient(onMessage, onStatus) {
   let socket = null;
   let name = '';
   let roomNo = null;
+  let gender = 'male';
+  let avatar = 'male-classic';
   let reconnectTimer = null;
   let closed = false;
   let poseSequence = 0;
@@ -26,24 +28,26 @@ export function createLanClient(onMessage, onStatus) {
     }
   }
 
-  function connect(nextName, nextRoomNo = null) {
+  function connect(nextName, nextRoomNo = null, profile = {}) {
     name = nextName.trim();
     roomNo = Number.isInteger(nextRoomNo) && nextRoomNo >= 1 && nextRoomNo <= 9999 ? nextRoomNo : null;
+    gender = profile.gender === 'female' ? 'female' : 'male';
+    avatar = gender === 'female' && profile.avatar === 'female-suzuka' ? 'female-suzuka' : 'male-classic';
     if (!name) return;
     closed = false;
-    if (socket?.readyState === WebSocket.OPEN) { send({ type: 'hello', token, name, roomNo }); return; }
+    if (socket?.readyState === WebSocket.OPEN) { send({ type: 'hello', token, name, roomNo, gender, avatar }); return; }
     if (socket?.readyState === WebSocket.CONNECTING) return;
     clearTimeout(reconnectTimer);
     onStatus('connecting');
     socket = new WebSocket(url);
-    socket.addEventListener('open', () => { onStatus('online'); send({ type: 'hello', token, name, roomNo }); });
+    socket.addEventListener('open', () => { onStatus('online'); send({ type: 'hello', token, name, roomNo, gender, avatar }); });
     socket.addEventListener('message', event => {
       try { onMessage(JSON.parse(event.data)); } catch { /* Ignore malformed messages. */ }
     });
     socket.addEventListener('close', () => {
       socket = null;
       onStatus('offline');
-      if (!closed) reconnectTimer = window.setTimeout(() => connect(name, roomNo), 3000);
+      if (!closed) reconnectTimer = window.setTimeout(() => connect(name, roomNo, { gender, avatar }), 3000);
     });
     socket.addEventListener('error', () => { onStatus('offline'); });
   }

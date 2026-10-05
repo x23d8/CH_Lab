@@ -33,9 +33,10 @@ export function createLanServer({ port = 5174, host = '0.0.0.0' } = {}) {
     return {
       type: 'state', serverNow: Date.now(),
       me: { id: viewer.id, name: viewer.name, role: viewer.role, roomNo: viewer.roomNo, seatId: viewer.seatId,
+        gender: viewer.gender, avatar: viewer.avatar,
         eligible: exam.eligible.has(viewer.id), submitted: exam.submissions.has(viewer.id) },
       players: online.filter(player => player.roomNo === viewer.roomNo)
-        .map(({ id, name, role, x, z, rotation, seatId }) => ({ id, name, role, x, z, rotation, seatId })),
+        .map(({ id, name, role, gender, avatar, x, z, rotation, seatId }) => ({ id, name, role, gender, avatar, x, z, rotation, seatId })),
       counts: { online: online.length, seated: online.filter(player => player.role === 'student' && player.seatId !== null).length,
         rooms: new Set(online.map(player => player.roomNo)).size,
         roomOccupancy: online.filter(player => player.roomNo === viewer.roomNo).length, roomCapacity: ROOM_CAPACITY },
@@ -61,6 +62,8 @@ export function createLanServer({ port = 5174, host = '0.0.0.0' } = {}) {
       error(ws, 'Số phòng phải là số nguyên từ 1 đến 9999.'); return;
     }
     const id = typeof message.token === 'string' && VALID_TOKEN.test(message.token) ? message.token : randomUUID();
+    const gender = message.gender === 'female' ? 'female' : 'male';
+    const avatar = gender === 'female' && message.avatar === 'female-suzuka' ? 'female-suzuka' : 'male-classic';
     const wantsTeacher = requestedName === TEACHER_NAME;
     const otherTeacher = teacherId && teacherId !== id && players.get(teacherId)?.connected;
     if (wantsTeacher && otherTeacher) { error(ws, 'Giảng viên đã đăng nhập trên thiết bị khác.'); return; }
@@ -85,11 +88,14 @@ export function createLanServer({ port = 5174, host = '0.0.0.0' } = {}) {
     if (teacherId === id && !wantsTeacher) teacherId = null;
     player.name = wantsTeacher ? 'Giảng viên' : requestedName;
     player.role = wantsTeacher ? 'teacher' : 'student';
+    player.gender = gender;
+    player.avatar = avatar;
     player.ws = ws;
     player.connected = true;
     if (wantsTeacher) { teacherId = id; player.seatId = null; }
     ws.playerId = id;
-    sendTo(player, { type: 'welcome', id, role: player.role, name: player.name, roomNo: player.roomNo, serverNow: Date.now(), examMinutes: EXAM_MINUTES });
+    sendTo(player, { type: 'welcome', id, role: player.role, name: player.name, gender, avatar,
+      roomNo: player.roomNo, serverNow: Date.now(), examMinutes: EXAM_MINUTES });
     sendTo(player, snapshot(player));
     openExamFor(player);
     broadcastState();

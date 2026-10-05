@@ -27,7 +27,7 @@ test('hai sinh viên ngồi, giảng viên mở đề và máy chủ xếp hạn
     await new Promise(resolve => server.close(resolve));
   });
 
-  async function join(name, roomNo = null) {
+  async function join(name, roomNo = null, profile = {}) {
     const ws = new WebSocket(`ws://127.0.0.1:${port}`);
     await once(ws, 'open');
     const inbox = [];
@@ -52,7 +52,7 @@ test('hai sinh viên ngồi, giảng viên mở đề và máy chủ xếp hạn
       },
     };
     clients.push(client);
-    client.send({ type: 'hello', token: randomUUID(), name, roomNo });
+    client.send({ type: 'hello', token: randomUUID(), name, roomNo, ...profile });
     client.identity = await client.wait('welcome');
     return client;
   }
@@ -71,12 +71,15 @@ test('hai sinh viên ngồi, giảng viên mở đề và máy chủ xếp hạn
   const teacher = await join('NHOM3HCM202AI1802');
   const first = await join('An');
   const second = await join('Bình');
-  const otherRoom = await join('Chi', 2);
+  const otherRoom = await join('Chi', 2, { gender: 'female', avatar: 'female-suzuka' });
   assert.equal(teacher.identity.role, 'teacher');
   assert.equal(teacher.identity.name, 'Giảng viên');
   assert.equal(otherRoom.identity.roomNo, 2);
+  assert.equal(otherRoom.identity.gender, 'female');
+  assert.equal(otherRoom.identity.avatar, 'female-suzuka');
   const isolatedState = await otherRoom.wait('state', state => state.counts?.online === 4);
   assert.deepEqual(isolatedState.players.map(player => player.name), ['Chi']);
+  assert.equal(isolatedState.players[0].avatar, 'female-suzuka');
 
   first.send({ type: 'chat', text: '  Chào cả phòng!  ' });
   const chat = await teacher.wait('chat');

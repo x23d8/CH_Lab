@@ -1,6 +1,7 @@
 import './style.css';
 import './quiz.css';
 import './exam.css';
+import './profile.css';
 import { createClassroom } from './scene.js';
 import { artworks } from './presentation-art.js';
 import { createQuiz } from './quiz.js';
@@ -25,7 +26,7 @@ document.querySelector('#app').innerHTML = `
       </div>
       <div class="top-actions">
         <span class="sunny-pill">${sunIcon}<span>Một ngày nắng thật đẹp</span></span>
-        <span id="lan-status" class="lan-status" role="status">Đang kết nối</span>
+        <span id="lan-status" class="lan-status" role="status">Chưa vào lớp</span>
         <span id="online-count" class="lan-status online-count" role="status">0 trực tuyến · 0 đã ngồi · Phòng 1</span>
         <button id="chat-button" class="score-button chat-button" type="button" aria-expanded="false" aria-controls="chat-panel" title="Trò chuyện trong phòng"><span class="chat-icon" aria-hidden="true">●</span><span class="chat-label">Trò chuyện</span><span id="chat-unread" class="chat-unread hidden" aria-label="Tin nhắn chưa đọc"></span></button>
         <button id="leaderboard-button" class="score-button" type="button" aria-expanded="false" aria-controls="leaderboard-panel">Bảng điểm</button>
@@ -61,6 +62,41 @@ document.querySelector('#app').innerHTML = `
 
     <div id="seat-status" class="seat-status hidden" role="status"></div>
     <div id="online-toast" class="online-toast hidden" role="status" aria-live="polite"></div>
+
+    <div id="profile-modal" class="profile-modal" aria-hidden="false">
+      <div class="profile-backdrop"></div>
+      <article class="profile-card" role="dialog" aria-modal="true" aria-labelledby="profile-title">
+        <div class="profile-copy">
+          <p class="section-label">THẺ VÀO LỚP · HCM202</p>
+          <h2 id="profile-title">Bạn sẽ bước vào lớp với hình dáng nào?</h2>
+          <p>Đặt tên, chọn nhân vật và phòng học. Thông tin này sẽ xuất hiện với mọi người trong cùng phòng.</p>
+          <div class="profile-note"><span>✦</span><span>Avatar nữ dùng model 3D có xương chuyển động; avatar nam giữ phong cách Màu Nắng hiện tại.</span></div>
+        </div>
+        <form id="profile-form" class="profile-form" autocomplete="off">
+          <div class="profile-fields">
+            <label><span>Tên hiển thị</span><input id="profile-name" type="text" maxlength="32" autocomplete="nickname" spellcheck="false" placeholder="Tên của bạn" required></label>
+            <label><span>Phòng</span><input id="profile-room" type="number" min="1" max="9999" step="1" inputmode="numeric" placeholder="Tự động"></label>
+          </div>
+          <fieldset class="avatar-picker">
+            <legend>Chọn giới tính và avatar</legend>
+            <label class="avatar-option avatar-option-male">
+              <input type="radio" name="profile-avatar" value="male-classic" data-gender="male" checked>
+              <span class="avatar-stage" aria-hidden="true"><span class="avatar-figure male-figure"><i></i><b></b><em></em></span></span>
+              <span class="avatar-option-copy"><strong>Nam</strong><small>Đồng phục xanh · phong cách hiện tại</small></span>
+              <span class="avatar-check">✓</span>
+            </label>
+            <label class="avatar-option avatar-option-female">
+              <input type="radio" name="profile-avatar" value="female-suzuka" data-gender="female">
+              <span class="avatar-stage" aria-hidden="true"><span class="avatar-figure female-figure"><i></i><b></b><em></em></span></span>
+              <span class="avatar-option-copy"><strong>Nữ</strong><small>Model 3D chibi · chuyển động xương</small></span>
+              <span class="avatar-check">✓</span>
+            </label>
+          </fieldset>
+          <p id="profile-error" class="profile-error hidden" role="alert"></p>
+          <button class="profile-enter" type="submit">Vào lớp học <span>→</span></button>
+        </form>
+      </article>
+    </div>
 
     <div class="floating-info floating-intro">
       <button id="intro-toggle" class="bubble-trigger" type="button" aria-expanded="false" aria-controls="intro-card">
@@ -113,13 +149,8 @@ document.querySelector('#app').innerHTML = `
         <h2 id="help-title">Cứ đi theo trí tò mò!</h2>
         <p>Dùng <strong>W A S D</strong> hoặc các phím mũi tên để điều khiển nhân vật; trên điện thoại, kéo joystick để di chuyển theo mọi hướng. Kéo chuột để đổi góc nhìn và cuộn để phóng to. Nhấp vào tranh để xem nội dung; nhấp vào TV trên kệ sách để chơi quiz. Khi tới gần, bạn cũng có thể nhấn <strong>E</strong>.</p>
         <div class="lan-name-form">
-          <label for="player-name">Vào lớp trực tuyến</label>
-          <div class="online-join-fields">
-            <input id="player-name" type="text" maxlength="32" autocomplete="nickname" spellcheck="false" placeholder="Tên của bạn" aria-label="Tên của bạn">
-            <input id="player-room" type="number" min="1" max="9999" step="1" inputmode="numeric" placeholder="Phòng tự động" aria-label="Số phòng, để trống để chọn tự động">
-            <button id="save-player-name" type="button">Vào phòng</button>
-          </div>
-          <small class="room-hint">Nhập số phòng muốn vào hoặc để trống để hệ thống tự xếp phòng còn chỗ.</small>
+          <label>Hồ sơ trong lớp</label>
+          <div class="profile-summary"><span id="profile-summary">Chưa chọn nhân vật</span><button id="edit-profile" type="button">Đổi hồ sơ</button></div>
           <small id="lan-help-status">Sinh viên tới gần ghế và nhấn E để ngồi. Giảng viên mở bài khi cả lớp đã sẵn sàng.</small>
         </div>
         <button class="primary-button" id="start-exploring" type="button">Bắt đầu dạo quanh <span>→</span></button>
@@ -174,6 +205,7 @@ const artModal = document.querySelector('#art-modal');
 const helpModal = document.querySelector('#help-modal');
 const quizModal = document.querySelector('#quiz-modal');
 const examModal = document.querySelector('#exam-modal');
+const profileModal = document.querySelector('#profile-modal');
 const quiz = createQuiz(quizModal);
 const nearby = document.querySelector('#nearby');
 const bubbleToggles = [...document.querySelectorAll('.bubble-trigger')];
@@ -370,7 +402,7 @@ function showExam(message) {
 function hideExam() {
   examOpen = false;
   examModal.classList.add('hidden'); examModal.setAttribute('aria-hidden', 'true');
-  classroom?.setActive(true);
+  classroom?.setActive(profileModal.classList.contains('hidden'));
 }
 
 function handleOnlineMessage(message) {
@@ -380,6 +412,10 @@ function handleOnlineMessage(message) {
     if (selfId && nextRoomNo !== roomNo) { roomNo = nextRoomNo; clearChat(); }
     else roomNo = nextRoomNo;
     selfId = message.id; role = message.role;
+    const gender = message.gender === 'female' ? 'female' : 'male';
+    const avatar = message.avatar === 'female-suzuka' ? 'female-suzuka' : 'male-classic';
+    classroom?.setProfile({ name: message.name, gender, avatar });
+    document.querySelector('#profile-summary').textContent = `${message.name} · ${gender === 'female' ? 'Nữ' : 'Nam'} · Phòng ${roomNo}`;
     document.querySelector('#chat-room').textContent = String(roomNo);
     updateLanStatus('online');
     toast(role === 'teacher' ? 'Đã vào lớp với vai trò giảng viên.' : `Chào ${message.name}, bạn đã vào phòng ${roomNo}.`);
@@ -438,7 +474,14 @@ function closeModals() {
   artModal.classList.add('hidden'); artModal.setAttribute('aria-hidden', 'true');
   helpModal.classList.add('hidden'); helpModal.setAttribute('aria-hidden', 'true');
   quizModal.classList.add('hidden'); quizModal.setAttribute('aria-hidden', 'true');
-  classroom?.setActive(!examOpen);
+  classroom?.setActive(!examOpen && profileModal.classList.contains('hidden'));
+}
+
+function openProfileEditor() {
+  closeModals(); closeBubbles(); showChat(false); showLeaderboard(false); resetJoystick();
+  profileModal.classList.remove('hidden'); profileModal.setAttribute('aria-hidden', 'false');
+  classroom?.setActive(false);
+  requestAnimationFrame(() => document.querySelector('#profile-name').focus());
 }
 
 function openArtwork(artwork) {
@@ -504,9 +547,14 @@ classroom = createClassroom(document.querySelector('#classroom'), {
 const savedName = localStorage.getItem('hcm202-player-name') || `Sinh viên ${Math.floor(Math.random() * 900 + 100)}`;
 const savedRoomValue = Number(localStorage.getItem('hcm202-room-no'));
 const savedRoom = Number.isInteger(savedRoomValue) && savedRoomValue >= 1 && savedRoomValue <= 9999 ? savedRoomValue : null;
-document.querySelector('#player-name').value = savedName;
-document.querySelector('#player-room').value = savedRoom ?? '';
-lan.connect(savedName, savedRoom);
+const savedAvatar = localStorage.getItem('hcm202-avatar') === 'female-suzuka' ? 'female-suzuka' : 'male-classic';
+const savedGender = savedAvatar === 'female-suzuka' ? 'female' : 'male';
+document.querySelector('#profile-name').value = savedName;
+document.querySelector('#profile-room').value = savedRoom ?? '';
+document.querySelector(`input[name="profile-avatar"][value="${savedAvatar}"]`).checked = true;
+document.querySelector('#profile-summary').textContent = `${savedName} · ${savedGender === 'female' ? 'Nữ' : 'Nam'}${savedRoom ? ` · Phòng ${savedRoom}` : ''}`;
+classroom.setProfile({ name: savedName, gender: savedGender, avatar: savedAvatar });
+classroom.setActive(false);
 window.addEventListener('pagehide', event => { if (!event.persisted) lan.stop(); });
 
 document.querySelector('#reset-view').addEventListener('click', () => classroom.resetCamera());
@@ -515,22 +563,34 @@ document.querySelector('#close-modal').addEventListener('click', closeModals);
 document.querySelector('#close-help').addEventListener('click', closeModals);
 document.querySelector('#close-quiz').addEventListener('click', closeModals);
 document.querySelector('#start-exploring').addEventListener('click', closeModals);
-document.querySelector('#save-player-name').addEventListener('click', () => {
-  const name = document.querySelector('#player-name').value.trim();
-  if (!name) { toast('Hãy nhập tên của bạn.'); return; }
-  const roomText = document.querySelector('#player-room').value.trim();
-  const roomNo = roomText === '' ? null : Number(roomText);
-  if (roomNo !== null && (!Number.isInteger(roomNo) || roomNo < 1 || roomNo > 9999)) {
-    toast('Số phòng phải là số nguyên từ 1 đến 9999.'); return;
-  }
+document.querySelector('#edit-profile').addEventListener('click', openProfileEditor);
+document.querySelector('#profile-form').addEventListener('submit', event => {
+  event.preventDefault();
+  const name = document.querySelector('#profile-name').value.trim();
+  const roomText = document.querySelector('#profile-room').value.trim();
+  const nextRoomNo = roomText === '' ? null : Number(roomText);
+  const selected = document.querySelector('input[name="profile-avatar"]:checked');
+  const avatar = selected?.value;
+  const gender = selected?.dataset.gender;
+  const error = document.querySelector('#profile-error');
+  let errorMessage = '';
+  if (!name) errorMessage = 'Hãy nhập tên của bạn.';
+  else if (nextRoomNo !== null && (!Number.isInteger(nextRoomNo) || nextRoomNo < 1 || nextRoomNo > 9999)) errorMessage = 'Số phòng phải là số nguyên từ 1 đến 9999.';
+  else if (!['male-classic', 'female-suzuka'].includes(avatar) || !['male', 'female'].includes(gender)) errorMessage = 'Hãy chọn một nhân vật.';
+  error.textContent = errorMessage;
+  error.classList.toggle('hidden', !errorMessage);
+  if (errorMessage) return;
   localStorage.setItem('hcm202-player-name', name);
-  if (roomNo === null) localStorage.removeItem('hcm202-room-no');
-  else localStorage.setItem('hcm202-room-no', String(roomNo));
-  lan.connect(name, roomNo);
-  toast(roomNo === null ? 'Đang tự động chọn phòng còn chỗ…' : `Đang chuyển vào phòng ${roomNo}…`);
-});
-for (const input of document.querySelectorAll('#player-name, #player-room')) input.addEventListener('keydown', event => {
-  if (event.key === 'Enter') { event.preventDefault(); document.querySelector('#save-player-name').click(); }
+  localStorage.setItem('hcm202-gender', gender);
+  localStorage.setItem('hcm202-avatar', avatar);
+  if (nextRoomNo === null) localStorage.removeItem('hcm202-room-no');
+  else localStorage.setItem('hcm202-room-no', String(nextRoomNo));
+  classroom.setProfile({ name, gender, avatar });
+  document.querySelector('#profile-summary').textContent = `${name} · ${gender === 'female' ? 'Nữ' : 'Nam'}${nextRoomNo ? ` · Phòng ${nextRoomNo}` : ''}`;
+  profileModal.classList.add('hidden'); profileModal.setAttribute('aria-hidden', 'true');
+  classroom.setActive(true);
+  lan.connect(name, nextRoomNo, { gender, avatar });
+  toast(nextRoomNo === null ? 'Đang tự động chọn phòng còn chỗ…' : `Đang vào phòng ${nextRoomNo}…`);
 });
 document.querySelector('#leaderboard-button').addEventListener('click', () => showLeaderboard(document.querySelector('#leaderboard-panel').classList.contains('hidden')));
 document.querySelector('#close-leaderboard').addEventListener('click', () => showLeaderboard(false));
