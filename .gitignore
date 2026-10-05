@@ -9,3 +9,7 @@ dist/
 
 .vercel
 .env*
+.simulated-students.json
+.simulated-students.stop
+simulated-students.log
+simulated-students-error.log

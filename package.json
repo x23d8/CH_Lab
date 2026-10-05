@@ -10,6 +10,8 @@
     "lan:server": "node server/lan.js",
     "test:lan": "node --test --test-isolation=none server/lan.test.js",
     "test:online": "node --test --test-isolation=none server/supabase-migration.test.js",
+    "simulate:students": "node server/simulate-students.js",
+    "simulate:students:stop": "node server/simulate-students.js --stop",
     "build": "vite build",
     "preview": "vite preview --host 0.0.0.0"
   },

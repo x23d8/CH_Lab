@@ -101,8 +101,13 @@ document.querySelector('#app').innerHTML = `
         <h2 id="help-title">Cứ đi theo trí tò mò!</h2>
         <p>Dùng <strong>W A S D</strong> hoặc các phím mũi tên để điều khiển nhân vật; trên điện thoại, kéo joystick để di chuyển theo mọi hướng. Kéo chuột để đổi góc nhìn và cuộn để phóng to. Nhấp vào tranh để xem nội dung; nhấp vào TV trên kệ sách để chơi quiz. Khi tới gần, bạn cũng có thể nhấn <strong>E</strong>.</p>
         <div class="lan-name-form">
-          <label for="player-name">Tên trong lớp trực tuyến</label>
-          <div><input id="player-name" type="text" maxlength="32" autocomplete="nickname" spellcheck="false" placeholder="Nhập tên của bạn"><button id="save-player-name" type="button">Lưu tên</button></div>
+          <label for="player-name">Vào lớp trực tuyến</label>
+          <div class="online-join-fields">
+            <input id="player-name" type="text" maxlength="32" autocomplete="nickname" spellcheck="false" placeholder="Tên của bạn" aria-label="Tên của bạn">
+            <input id="player-room" type="number" min="1" max="9999" step="1" inputmode="numeric" placeholder="Phòng tự động" aria-label="Số phòng, để trống để chọn tự động">
+            <button id="save-player-name" type="button">Vào phòng</button>
+          </div>
+          <small class="room-hint">Nhập số phòng muốn vào hoặc để trống để hệ thống tự xếp phòng còn chỗ.</small>
           <small id="lan-help-status">Sinh viên tới gần ghế và nhấn E để ngồi. Giảng viên mở bài khi cả lớp đã sẵn sàng.</small>
         </div>
         <button class="primary-button" id="start-exploring" type="button">Bắt đầu dạo quanh <span>→</span></button>
@@ -413,8 +418,11 @@ classroom = createClassroom(document.querySelector('#classroom'), {
 });
 
 const savedName = localStorage.getItem('hcm202-player-name') || `Sinh viên ${Math.floor(Math.random() * 900 + 100)}`;
+const savedRoomValue = Number(localStorage.getItem('hcm202-room-no'));
+const savedRoom = Number.isInteger(savedRoomValue) && savedRoomValue >= 1 && savedRoomValue <= 9999 ? savedRoomValue : null;
 document.querySelector('#player-name').value = savedName;
-lan.connect(savedName);
+document.querySelector('#player-room').value = savedRoom ?? '';
+lan.connect(savedName, savedRoom);
 window.addEventListener('pagehide', event => { if (!event.persisted) lan.stop(); });
 
 document.querySelector('#reset-view').addEventListener('click', () => classroom.resetCamera());
@@ -426,11 +434,18 @@ document.querySelector('#start-exploring').addEventListener('click', closeModals
 document.querySelector('#save-player-name').addEventListener('click', () => {
   const name = document.querySelector('#player-name').value.trim();
   if (!name) { toast('Hãy nhập tên của bạn.'); return; }
+  const roomText = document.querySelector('#player-room').value.trim();
+  const roomNo = roomText === '' ? null : Number(roomText);
+  if (roomNo !== null && (!Number.isInteger(roomNo) || roomNo < 1 || roomNo > 9999)) {
+    toast('Số phòng phải là số nguyên từ 1 đến 9999.'); return;
+  }
   localStorage.setItem('hcm202-player-name', name);
-  lan.connect(name);
-  toast('Đang cập nhật tên trong lớp…');
+  if (roomNo === null) localStorage.removeItem('hcm202-room-no');
+  else localStorage.setItem('hcm202-room-no', String(roomNo));
+  lan.connect(name, roomNo);
+  toast(roomNo === null ? 'Đang tự động chọn phòng còn chỗ…' : `Đang chuyển vào phòng ${roomNo}…`);
 });
-document.querySelector('#player-name').addEventListener('keydown', event => {
+for (const input of document.querySelectorAll('#player-name, #player-room')) input.addEventListener('keydown', event => {
   if (event.key === 'Enter') { event.preventDefault(); document.querySelector('#save-player-name').click(); }
 });
 document.querySelector('#leaderboard-button').addEventListener('click', () => showLeaderboard(document.querySelector('#leaderboard-panel').classList.contains('hidden')));

@@ -4,6 +4,7 @@ import { readFile } from 'node:fs/promises';
 import { PGlite } from '@electric-sql/pglite';
 
 const migration = await readFile(new URL('../supabase/migrations/20261001_online_classroom.sql', import.meta.url), 'utf8');
+const roomSelectionMigration = await readFile(new URL('../supabase/migrations/20261005_room_selection.sql', import.meta.url), 'utf8');
 const id = number => `00000000-0000-4000-8000-${String(number).padStart(12, '0')}`;
 
 test('migration: phân 10 người/phòng và dùng một lượt kiểm tra cho mọi phòng', async () => {
@@ -23,11 +24,12 @@ test('migration: phân 10 người/phòng và dùng một lượt kiểm tra cho
       create function realtime.topic() returns text language sql stable as $$ select 'hcm-global'::text $$;
     `);
     await db.exec(migration);
+    await db.exec(roomSelectionMigration);
     const call = async (number, query) => {
       await db.query(`select set_config('request.jwt.claim.sub', $1, false)`, [id(number)]);
       return (await db.query(query)).rows[0];
     };
-    for (let number = 1; number <= 11; number++) {
+    for (let number = 1; number <= 12; number++) {
       await db.query('insert into auth.users(id) values ($1)', [id(number)]);
     }
     await db.exec('set role authenticated;');
@@ -45,6 +47,13 @@ test('migration: phân 10 người/phòng và dùng một lượt kiểm tra cho
     assert.deepEqual(tenthStudent.counts, { online: 11, seated: 0, rooms: 2, roomOccupancy: 1, roomCapacity: 10 });
     assert.equal((await call(11, "select hcm_private.hcm_channel_access('hcm-room-2') as allowed")).allowed, true);
     assert.equal((await call(11, "select hcm_private.hcm_channel_access('hcm-room-1') as allowed")).allowed, false);
+    await assert.rejects(call(12, "select public.hcm_join_room('Phòng đầy', 1)"), /đủ 10 người/);
+    const selectedRoom = (await call(12, "select public.hcm_join_room('Chọn phòng 8', 8) as state")).state;
+    assert.equal(selectedRoom.me.roomNo, 8);
+    assert.equal(selectedRoom.counts.roomOccupancy, 1);
+    const movedRoom = (await call(12, "select public.hcm_join_room('Đổi phòng 9', 9) as state")).state;
+    assert.equal(movedRoom.me.roomNo, 9);
+    assert.equal(movedRoom.me.seatId, null);
     await assert.rejects(call(11, 'select * from public.hcm_exam_questions'), /permission denied/);
     await assert.rejects(call(2, 'select public.hcm_start_exam()'), /Chỉ giảng viên/);
 

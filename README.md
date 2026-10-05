@@ -5,7 +5,7 @@ Lớp học 3D bằng Three.js và Vite. Người chơi khám phá tám tranh v�
 ## Chạy bản trực tuyến
 
 1. Tạo dự án Supabase. Trong **Authentication → Providers**, bật **Anonymous Sign-Ins**.
-2. Trong **SQL Editor**, chạy toàn bộ [migration lớp học](supabase/migrations/20261001_online_classroom.sql) một lần. Ứng dụng dùng các kênh `private: true` và chính sách truy cập trong migration. Có thể để **Allow public access** bật; tắt tùy chọn này nếu muốn toàn bộ dự án chỉ cho phép kênh riêng, không cho tạo kênh công khai.
+2. Trong **SQL Editor**, chạy toàn bộ [migration lớp học](supabase/migrations/20261001_online_classroom.sql) một lần. Nếu cơ sở dữ liệu đã được cài trước ngày 05/10/2026, chỉ cần chạy thêm [migration chọn phòng](supabase/migrations/20261005_room_selection.sql). Ứng dụng dùng các kênh `private: true` và chính sách truy cập trong migration. Có thể để **Allow public access** bật; tắt tùy chọn này nếu muốn toàn bộ dự án chỉ cho phép kênh riêng, không cho tạo kênh công khai.
 3. Tạo `.env` từ `.env.example` và điền URL cùng **publishable key** của dự án. Không đưa `service_role` hoặc secret key vào ứng dụng trình duyệt. `.env` hiện có với tên `NEXT_PUBLIC_SUPABASE_URL` và `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` cũng được hỗ trợ.
 4. Chạy:
 

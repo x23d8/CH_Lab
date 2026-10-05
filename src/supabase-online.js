@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 function friendlyError(error) {
   const message = error?.message || String(error);
   if (/anonymous|signup|signups|disabled/i.test(message)) return 'Supabase chưa bật Anonymous Sign-Ins trong Auth Settings.';
+  if (/hcm_join_room/i.test(message)) return 'Supabase chưa có cơ chế chọn phòng. Hãy chạy migration 20261005_room_selection.sql.';
   if (/Could not find the function|schema cache|404|hcm_join/i.test(message)) return 'Chưa cài migration SQL cho lớp học trên Supabase.';
   return message;
 }
@@ -12,6 +13,7 @@ export function createSupabaseOnlineClient(url, key, onMessage, onStatus) {
     auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false },
   });
   let desiredName = '';
+  let desiredRoom = null;
   let userId = null;
   let roomNo = null;
   let roomChannel = null;
@@ -19,9 +21,10 @@ export function createSupabaseOnlineClient(url, key, onMessage, onStatus) {
   let latestState = null;
   let peers = new Map();
   let presenceReady = false;
-  let currentPose = { x: 4.6, z: 3.7, rotation: 0 };
+  let currentPose = { x: 4.6, z: 3.7, rotation: 0, vx: 0, vz: 0 };
   let lastPose = null;
   let lastPoseAt = 0;
+  let poseSequence = 0;
   let heartbeatTimer = null;
   let pollTimer = null;
   let retryTimer = null;
@@ -33,6 +36,8 @@ export function createSupabaseOnlineClient(url, key, onMessage, onStatus) {
   let lastPresenceAt = 0;
   let reportedResultRound = null;
   let seatActionPending = false;
+
+  const safeVelocity = value => Number.isFinite(value) ? Math.max(-5, Math.min(5, value)) : 0;
 
   async function rpc(functionName, args = {}) {
     const { data, error } = await supabase.rpc(functionName, args);
@@ -49,7 +54,8 @@ export function createSupabaseOnlineClient(url, key, onMessage, onStatus) {
       const saved = databasePlayers.get(player.id);
       if (!saved) return player;
       if (player.id === userId || saved.seatId !== player.seatId) return saved;
-      return { ...saved, x: player.x, z: player.z, rotation: player.rotation };
+      return { ...saved, x: player.x, z: player.z, rotation: player.rotation,
+        vx: player.vx ?? 0, vz: player.vz ?? 0 };
     });
     if (latestState?.me && !list.some(player => player.id === userId)) {
       const own = latestState.players.find(player => player.id === userId);
@@ -72,6 +78,8 @@ export function createSupabaseOnlineClient(url, key, onMessage, onStatus) {
         x: old && old.seatId === (meta.seatId ?? null) ? old.x : meta.x ?? 4.6,
         z: old && old.seatId === (meta.seatId ?? null) ? old.z : meta.z ?? 3.7,
         rotation: old && old.seatId === (meta.seatId ?? null) ? old.rotation : meta.rotation ?? 0,
+        vx: old && old.seatId === (meta.seatId ?? null) ? old.vx ?? 0 : meta.vx ?? 0,
+        vz: old && old.seatId === (meta.seatId ?? null) ? old.vz ?? 0 : meta.vz ?? 0,
       });
     }
     peers = next;
@@ -83,10 +91,11 @@ export function createSupabaseOnlineClient(url, key, onMessage, onStatus) {
     if (!roomChannel || !latestState?.me || !connected) return;
     const me = latestState.me;
     const own = latestState.players.find(player => player.id === userId);
-    if (own?.seatId !== null && own?.seatId !== undefined) currentPose = { x: own.x, z: own.z, rotation: own.rotation };
+    if (own?.seatId !== null && own?.seatId !== undefined) currentPose = { x: own.x, z: own.z, rotation: own.rotation, vx: 0, vz: 0 };
     await roomChannel.track({
       id: userId, name: me.name, role: me.role, seatId: me.seatId,
       x: currentPose.x, z: currentPose.z, rotation: currentPose.rotation,
+      vx: currentPose.vx, vz: currentPose.vz,
     });
     lastPresenceAt = Date.now();
   }
@@ -128,7 +137,7 @@ export function createSupabaseOnlineClient(url, key, onMessage, onStatus) {
     if (retryTimer || stopped) return;
     connected = false;
     onStatus('offline');
-    retryTimer = window.setTimeout(() => { retryTimer = null; connect(desiredName); }, delay);
+    retryTimer = window.setTimeout(() => { retryTimer = null; connect(desiredName, desiredRoom); }, delay);
   }
 
   function subscribe(channel) {
@@ -165,7 +174,10 @@ export function createSupabaseOnlineClient(url, key, onMessage, onStatus) {
           const peer = peers.get(payload?.id);
           if (!peer || peer.seatId !== null || payload.id === userId || ![payload.x, payload.z, payload.rotation].every(Number.isFinite)) return;
           peer.x = payload.x; peer.z = payload.z; peer.rotation = payload.rotation;
-          emitPlayers();
+          peer.vx = safeVelocity(payload.vx);
+          peer.vz = safeVelocity(payload.vz);
+          onMessage({ type: 'pose', id: payload.id, x: payload.x, z: payload.z, rotation: payload.rotation,
+            vx: peer.vx, vz: peer.vz, seq: payload.seq });
         })
         .on('broadcast', { event: 'seat-changed' }, () => refresh());
       await subscribe(roomChannel);
@@ -192,9 +204,12 @@ export function createSupabaseOnlineClient(url, key, onMessage, onStatus) {
     pollTimer = window.setInterval(refresh, 4000);
   }
 
-  async function connect(nextName) {
+  async function connect(nextName, nextRoomNo = null) {
     desiredName = nextName.trim();
+    desiredRoom = Number.isInteger(nextRoomNo) && nextRoomNo >= 1 && nextRoomNo <= 9999 ? nextRoomNo : null;
     if (!desiredName || joining || stopped) return;
+    const wasConnected = connected;
+    let joinedRoom = false;
     clearTimeout(retryTimer); retryTimer = null;
     joining = true;
     onStatus('connecting');
@@ -209,7 +224,8 @@ export function createSupabaseOnlineClient(url, key, onMessage, onStatus) {
         user = data.user;
       }
       userId = user.id;
-      const state = await rpc('hcm_join', { p_name: desiredName });
+      const state = await rpc('hcm_join_room', { p_name: desiredName, p_room: desiredRoom });
+      joinedRoom = true;
       const previousExam = latestState?.exam;
       latestState = state;
       await ensureChannels(state.me.roomNo);
@@ -222,10 +238,17 @@ export function createSupabaseOnlineClient(url, key, onMessage, onStatus) {
       startIntervals();
       broadcastGlobal();
     } catch (error) {
-      connected = false;
-      await resetChannels();
       report(error);
-      scheduleRetry();
+      if (wasConnected && !joinedRoom && roomChannel && globalChannel) {
+        desiredRoom = roomNo;
+        connected = true;
+        onStatus('online');
+      } else {
+        connected = false;
+        await resetChannels();
+        if (!/đủ 10 người|Số phòng|nhập tên|Giảng viên đã đăng nhập/i.test(error?.message || '')) scheduleRetry();
+        else onStatus('offline');
+      }
     } finally { joining = false; }
   }
 
@@ -243,7 +266,7 @@ export function createSupabaseOnlineClient(url, key, onMessage, onStatus) {
         }
         const data = await rpc(message.type === 'sit' ? 'hcm_sit' : 'hcm_stand', message.type === 'sit' ? { p_seat: message.seatId } : {});
         const own = data.players.find(player => player.id === userId);
-        if (own) currentPose = { x: own.x, z: own.z, rotation: own.rotation };
+        if (own) currentPose = { x: own.x, z: own.z, rotation: own.rotation, vx: 0, vz: 0 };
         consumeState(data);
         await trackPresence();
         roomChannel?.send({ type: 'broadcast', event: 'seat-changed', payload: {} });
@@ -262,13 +285,19 @@ export function createSupabaseOnlineClient(url, key, onMessage, onStatus) {
   function send(message) {
     if (message.type === 'pose') {
       if (![message.x, message.z, message.rotation].every(Number.isFinite)) return;
-      currentPose = { x: message.x, z: message.z, rotation: message.rotation };
+      currentPose = {
+        x: message.x, z: message.z, rotation: message.rotation,
+        vx: safeVelocity(message.vx),
+        vz: safeVelocity(message.vz),
+      };
       const now = performance.now();
-      const poseInterval = 125;
+      const poseInterval = 100;
       if (!connected || !roomChannel || now - lastPoseAt < poseInterval) return;
-      if (lastPose && Math.hypot(message.x - lastPose.x, message.z - lastPose.z) < .025 && Math.abs(message.rotation - lastPose.rotation) < .04) return;
+      if (lastPose && Math.hypot(message.x - lastPose.x, message.z - lastPose.z) < .025 &&
+          Math.abs(message.rotation - lastPose.rotation) < .04 &&
+          Math.hypot(currentPose.vx - lastPose.vx, currentPose.vz - lastPose.vz) < .08) return;
       lastPose = currentPose; lastPoseAt = now;
-      roomChannel.send({ type: 'broadcast', event: 'pose', payload: { id: userId, ...currentPose } });
+      roomChannel.send({ type: 'broadcast', event: 'pose', payload: { id: userId, seq: ++poseSequence, ...currentPose } });
     } else if (userId) performAction(message);
   }
 

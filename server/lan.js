@@ -8,6 +8,7 @@ import { scoreAnswers, rankSubmissions } from './scoring.js';
 
 const TEACHER_NAME = 'NHOM3HCM202AI1802';
 const VALID_TOKEN = /^[a-f0-9-]{36}$/i;
+const ROOM_CAPACITY = 10;
 
 export function createLanServer({ port = 5174, host = '0.0.0.0' } = {}) {
   const wss = new WebSocketServer({ port, host, maxPayload: 4096 });
@@ -21,18 +22,27 @@ export function createLanServer({ port = 5174, host = '0.0.0.0' } = {}) {
   }
 
   function sendTo(player, payload) { send(player.ws, payload); }
-  function broadcast(payload) { for (const player of players.values()) if (player.connected) sendTo(player, payload); }
+  function broadcast(payload, roomNo = null) {
+    for (const player of players.values()) if (player.connected && (roomNo === null || player.roomNo === roomNo)) sendTo(player, payload);
+  }
   function rankings() {
     return rankSubmissions([...exam.submissions].map(([id, item]) => ({ ...item, id, name: players.get(id)?.name || 'Sinh viên' })));
   }
-  function snapshot() {
+  function snapshot(viewer) {
+    const online = [...players.values()].filter(player => player.connected);
     return {
       type: 'state', serverNow: Date.now(),
-      players: [...players.values()].filter(p => p.connected).map(({ id, name, role, x, z, rotation, seatId }) => ({ id, name, role, x, z, rotation, seatId })),
+      me: { id: viewer.id, name: viewer.name, role: viewer.role, roomNo: viewer.roomNo, seatId: viewer.seatId,
+        eligible: exam.eligible.has(viewer.id), submitted: exam.submissions.has(viewer.id) },
+      players: online.filter(player => player.roomNo === viewer.roomNo)
+        .map(({ id, name, role, x, z, rotation, seatId }) => ({ id, name, role, x, z, rotation, seatId })),
+      counts: { online: online.length, seated: online.filter(player => player.role === 'student' && player.seatId !== null).length,
+        rooms: new Set(online.map(player => player.roomNo)).size,
+        roomOccupancy: online.filter(player => player.roomNo === viewer.roomNo).length, roomCapacity: ROOM_CAPACITY },
       exam: { phase: exam.phase, round, startedAt: exam.startedAt, endsAt: exam.endsAt, participantCount: exam.eligible.size, submittedCount: exam.submissions.size, rankings: rankings() },
     };
   }
-  function broadcastState() { broadcast(snapshot()); }
+  function broadcastState() { for (const player of players.values()) if (player.connected) sendTo(player, snapshot(player)); }
   function error(playerOrSocket, message) { send(playerOrSocket.ws || playerOrSocket, { type: 'error', message }); }
 
   function openExamFor(player) {
@@ -47,15 +57,30 @@ export function createLanServer({ port = 5174, host = '0.0.0.0' } = {}) {
   function handleHello(ws, message) {
     const requestedName = typeof message.name === 'string' ? message.name.trim().slice(0, 32) : '';
     if (!requestedName) { error(ws, 'Hãy nhập tên trước khi vào lớp LAN.'); return; }
+    if (message.roomNo !== null && message.roomNo !== undefined && (!Number.isInteger(message.roomNo) || message.roomNo < 1 || message.roomNo > 9999)) {
+      error(ws, 'Số phòng phải là số nguyên từ 1 đến 9999.'); return;
+    }
     const id = typeof message.token === 'string' && VALID_TOKEN.test(message.token) ? message.token : randomUUID();
     const wantsTeacher = requestedName === TEACHER_NAME;
     const otherTeacher = teacherId && teacherId !== id && players.get(teacherId)?.connected;
     if (wantsTeacher && otherTeacher) { error(ws, 'Giảng viên đã đăng nhập trên thiết bị khác.'); return; }
     let player = players.get(id);
+    let nextRoom = message.roomNo ?? player?.roomNo ?? 1;
+    if (message.roomNo == null && !player) {
+      nextRoom = 1;
+      while ([...players.values()].filter(item => item.connected && item.roomNo === nextRoom).length >= ROOM_CAPACITY) nextRoom++;
+    }
+    if ([...players.values()].filter(item => item.connected && item.id !== id && item.roomNo === nextRoom).length >= ROOM_CAPACITY) {
+      error(ws, `Phòng ${nextRoom} đã đủ ${ROOM_CAPACITY} người.`); return;
+    }
     if (player?.ws && player.ws !== ws) player.ws.close(4000, 'Phiên đã mở trên thiết bị khác');
     if (!player) {
-      player = { id, x: 4.6, z: 3.7, rotation: 0, seatId: null, lastPoseAt: Date.now() };
+      player = { id, x: 4.6, z: 3.7, rotation: 0, seatId: null, roomNo: nextRoom, lastPoseAt: Date.now() };
       players.set(id, player);
+    }
+    if (player.roomNo !== nextRoom) {
+      player.roomNo = nextRoom; player.seatId = null;
+      player.x = 4.6; player.z = 3.7; player.rotation = 0; player.lastPoseAt = Date.now();
     }
     if (teacherId === id && !wantsTeacher) teacherId = null;
     player.name = wantsTeacher ? 'Giảng viên' : requestedName;
@@ -64,8 +89,8 @@ export function createLanServer({ port = 5174, host = '0.0.0.0' } = {}) {
     player.connected = true;
     if (wantsTeacher) { teacherId = id; player.seatId = null; }
     ws.playerId = id;
-    sendTo(player, { type: 'welcome', id, role: player.role, name: player.name, serverNow: Date.now(), examMinutes: EXAM_MINUTES });
-    sendTo(player, snapshot());
+    sendTo(player, { type: 'welcome', id, role: player.role, name: player.name, roomNo: player.roomNo, serverNow: Date.now(), examMinutes: EXAM_MINUTES });
+    sendTo(player, snapshot(player));
     openExamFor(player);
     broadcastState();
   }
@@ -94,7 +119,10 @@ export function createLanServer({ port = 5174, host = '0.0.0.0' } = {}) {
       if (Math.hypot(x - player.x, z - player.z) > 5.5 * elapsed + .6) return;
       player.x = x; player.z = z; player.rotation = rotation;
       player.lastPoseAt = now;
-      broadcast({ type: 'pose', id: player.id, x, z, rotation });
+      const vx = Number.isFinite(message.vx) ? Math.max(-5, Math.min(5, message.vx)) : 0;
+      const vz = Number.isFinite(message.vz) ? Math.max(-5, Math.min(5, message.vz)) : 0;
+      broadcast({ type: 'pose', id: player.id, x, z, rotation, vx, vz,
+        seq: Number.isInteger(message.seq) ? message.seq : undefined }, player.roomNo);
     } else if (message.type === 'sit') {
       if (player.role === 'teacher') { error(player, 'Ghế kiểm tra dành cho sinh viên.'); return; }
       const seatId = message.seatId;
@@ -103,7 +131,7 @@ export function createLanServer({ port = 5174, host = '0.0.0.0' } = {}) {
       if (Math.hypot(player.x - seat.x, player.z - seat.z) > 1.8 && player.seatId !== seatId) {
         error(player, 'Hãy đi tới gần ghế trước khi ngồi.'); return;
       }
-      if ([...players.values()].some(p => p.id !== player.id && p.connected && p.seatId === seatId)) {
+      if ([...players.values()].some(p => p.id !== player.id && p.connected && p.roomNo === player.roomNo && p.seatId === seatId)) {
         error(player, 'Ghế này đã có người ngồi.'); return;
       }
       player.seatId = seatId; player.x = seat.x; player.z = seat.z; player.rotation = Math.PI;

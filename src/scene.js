@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { artworks } from './presentation-art.js';
 import { deskPositions, seatPosition } from './classroom-config.js';
-import { createMotionBuffer, pushMotionSample, readMotionBuffer } from './remote-motion.js';
+import { approachMotionPose, createMotionBuffer, predictMotionPose, pushMotionSample } from './remote-motion.js';
 
 const palette = {
   ink: 0x416567, mint: 0xc9ead8, darkMint: 0x83bca5, cream: 0xfff6dd,
@@ -430,7 +430,6 @@ export function createClassroom(canvas, { onArtwork, onQuiz, onNearby, onSeat = 
   let active = true;
   let lastTvFrame = 0;
   let lastPoseFrame = 0;
-  const remoteDelayMs = 150;
 
   function updateRemoteAvatar(avatar, pose) {
     const now = performance.now();
@@ -479,10 +478,18 @@ export function createClassroom(canvas, { onArtwork, onQuiz, onNearby, onSeat = 
     }
   }
 
-  function syncPose({ id, x, z, rotation }) {
+  function syncPose(pose) {
+    const { id, x, z, rotation } = pose;
     const avatar = remotePlayers.get(id);
     if (!avatar || avatar.target?.seatId !== null || ![x, z, rotation].every(Number.isFinite)) return;
-    updateRemoteAvatar(avatar, { x, z, rotation, seatId: null });
+    const sequence = pose.seq;
+    if (Number.isInteger(sequence) && Number.isInteger(avatar.lastSequence) && sequence <= avatar.lastSequence) return;
+    if (Number.isInteger(sequence)) avatar.lastSequence = sequence;
+    updateRemoteAvatar(avatar, {
+      x, z, rotation, seatId: null,
+      vx: Number.isFinite(pose.vx) ? pose.vx : 0,
+      vz: Number.isFinite(pose.vz) ? pose.vz : 0,
+    });
   }
 
   function canMove(x, z) {
@@ -622,7 +629,12 @@ export function createClassroom(canvas, { onArtwork, onQuiz, onNearby, onSeat = 
     for (const avatar of remotePlayers.values()) {
       if (!avatar.target) continue;
       const { seatId } = avatar.target;
-      const { x, z, rotation } = readMotionBuffer(avatar.motion, now - remoteDelayMs);
+      const latest = predictMotionPose(avatar.motion, now);
+      const { x, z, rotation } = seatId === null
+        ? approachMotionPose({
+            x: avatar.root.position.x, z: avatar.root.position.z, rotation: avatar.body.rotation.y,
+          }, latest, dt)
+        : latest;
       const previousX = avatar.root.position.x;
       const previousZ = avatar.root.position.z;
       avatar.root.position.set(x, 0, z);
@@ -641,8 +653,11 @@ export function createClassroom(canvas, { onArtwork, onQuiz, onNearby, onSeat = 
         avatar.legs.forEach(leg => { leg.rotation.x += ((seatId !== null ? -1.2 : 0) - leg.rotation.x) * .2; });
       }
     }
-    if (selfId && selfSeatId === null && now - lastPoseFrame > 100) {
-      onPose({ x: character.root.position.x, z: character.root.position.z, rotation: character.body.rotation.y });
+    if (selfId && selfSeatId === null && now - lastPoseFrame > 50) {
+      onPose({
+        x: character.root.position.x, z: character.root.position.z,
+        rotation: character.body.rotation.y, vx: velocityX, vz: velocityZ,
+      });
       lastPoseFrame = now;
     }
     if (now - lastTvFrame > 50) { quizTv.update(now); lastTvFrame = now; }

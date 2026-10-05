@@ -15,30 +15,35 @@ export function createLanClient(onMessage, onStatus) {
   const url = `${protocol}//${location.hostname}:${port}`;
   let socket = null;
   let name = '';
+  let roomNo = null;
   let reconnectTimer = null;
   let closed = false;
+  let poseSequence = 0;
 
   function send(payload) {
-    if (socket?.readyState === WebSocket.OPEN) socket.send(JSON.stringify(payload));
+    if (socket?.readyState === WebSocket.OPEN) {
+      socket.send(JSON.stringify(payload.type === 'pose' ? { ...payload, seq: ++poseSequence } : payload));
+    }
   }
 
-  function connect(nextName) {
+  function connect(nextName, nextRoomNo = null) {
     name = nextName.trim();
+    roomNo = Number.isInteger(nextRoomNo) && nextRoomNo >= 1 && nextRoomNo <= 9999 ? nextRoomNo : null;
     if (!name) return;
     closed = false;
-    if (socket?.readyState === WebSocket.OPEN) { send({ type: 'hello', token, name }); return; }
+    if (socket?.readyState === WebSocket.OPEN) { send({ type: 'hello', token, name, roomNo }); return; }
     if (socket?.readyState === WebSocket.CONNECTING) return;
     clearTimeout(reconnectTimer);
     onStatus('connecting');
     socket = new WebSocket(url);
-    socket.addEventListener('open', () => { onStatus('online'); send({ type: 'hello', token, name }); });
+    socket.addEventListener('open', () => { onStatus('online'); send({ type: 'hello', token, name, roomNo }); });
     socket.addEventListener('message', event => {
       try { onMessage(JSON.parse(event.data)); } catch { /* Ignore malformed messages. */ }
     });
     socket.addEventListener('close', () => {
       socket = null;
       onStatus('offline');
-      if (!closed) reconnectTimer = window.setTimeout(() => connect(name), 3000);
+      if (!closed) reconnectTimer = window.setTimeout(() => connect(name, roomNo), 3000);
     });
     socket.addEventListener('error', () => { onStatus('offline'); });
   }
