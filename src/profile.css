@@ -2,7 +2,7 @@
 .profile-backdrop{position:absolute;inset:0;background:linear-gradient(135deg,#315e59cc,#6e8e78a8);backdrop-filter:blur(13px) saturate(.9)}
 .profile-card{position:relative;display:grid;grid-template-columns:minmax(250px,.72fr) minmax(600px,1.55fr);width:min(1080px,96vw);max-height:96dvh;overflow:auto;border:7px solid #fffef9;border-radius:28px;background:#fffaf0;box-shadow:0 28px 90px #234b466b,0 6px 0 #d7ceb6}
 .profile-copy{position:relative;display:flex;flex-direction:column;justify-content:center;padding:48px 38px;background:linear-gradient(155deg,#dcefe0,#f3f2d5);overflow:hidden}
-.profile-copy::before{content:'AI LAB';position:absolute;right:-25px;bottom:5px;color:#fff9;font:900 80px/1 'Baloo 2',sans-serif;letter-spacing:-.08em;transform:rotate(-90deg);transform-origin:bottom right}
+.profile-copy::before{content:'HCM202';position:absolute;right:-25px;bottom:5px;color:#fff9;font:900 80px/1 'Baloo 2',sans-serif;letter-spacing:-.08em;transform:rotate(-90deg);transform-origin:bottom right}
 .profile-copy::after{content:'';position:absolute;top:-65px;left:-55px;width:170px;height:170px;border:28px solid #f2c87366;border-radius:50%}
 .profile-copy>*{position:relative;z-index:1}
 .profile-copy h2{margin:14px 0 13px;color:#385f5b;font:800 clamp(29px,4vw,43px)/1.05 'Baloo 2',sans-serif;letter-spacing:-.045em}

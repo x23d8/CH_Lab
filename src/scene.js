@@ -125,7 +125,18 @@ function addArt(room, item, x, y, z, facing = 'back', width = 1.72) {
   box(group, 0, 0, 0, width + 0.23, h + 0.23, 0.18, materials.woodDark);
   box(group, 0, 0, 0.105, width + 0.12, h + 0.12, 0.08, materials.gold);
   box(group, 0, 0, 0.155, width + 0.035, h + 0.035, 0.03, materials.white);
-  const texture = new THREE.CanvasTexture(item.canvas);
+  const texture = new THREE.TextureLoader().load(item.imageUrl, loaded => {
+    const imageAspect = loaded.image.width / loaded.image.height;
+    const frameAspect = width / h;
+    if (imageAspect > frameAspect) {
+      loaded.repeat.x = frameAspect / imageAspect;
+      loaded.offset.x = (1 - loaded.repeat.x) / 2;
+    } else {
+      loaded.repeat.y = imageAspect / frameAspect;
+      loaded.offset.y = (1 - loaded.repeat.y) / 2;
+    }
+    loaded.needsUpdate = true;
+  });
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.anisotropy = 8;
   const image = mesh(new THREE.PlaneGeometry(width, h), new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide }), group, 0, 0, 0.178);
@@ -202,9 +213,9 @@ function addBoard(room) {
   const texture = makeTextTexture(1024, 512, (c) => {
     c.clearRect(0, 0, 1024, 512);
     c.textAlign = 'center'; c.fillStyle = '#fff8d9';
-    c.font = 'bold 66px "Trebuchet MS", sans-serif'; c.fillText('AI LAB HÔM NAY', 512, 98);
+    c.font = 'bold 66px "Trebuchet MS", sans-serif'; c.fillText('VĂN HÓA TỪ TA', 512, 98);
     c.fillStyle = '#f8eab9'; c.font = '45px "Trebuchet MS", sans-serif';
-    ['✦  Đặt câu hỏi rõ ràng', '✦  Kiểm chứng đầu ra', '✦  Bảo vệ dữ liệu riêng tư'].forEach((line, i) => c.fillText(line, 512, 190 + i * 82));
+    ['✦  Học có nguồn', '✦  Nói có trách nhiệm', '✦  Sống vì cộng đồng'].forEach((line, i) => c.fillText(line, 512, 190 + i * 82));
     c.strokeStyle = '#f8d496'; c.lineWidth = 4; c.beginPath(); c.moveTo(185, 121); c.lineTo(839, 121); c.stroke();
     c.font = '42px sans-serif'; c.fillStyle = '#ffd997'; c.fillText('☆', 900, 82); c.fillText('☆', 124, 392);
   });
@@ -534,7 +545,7 @@ export function createClassroom(canvas, { onArtwork, onQuiz, onNearby, onSeat = 
   addWallDecor(room);
   addBoard(room);
   addWindow(room, 5.12, 3.11);
-  wallSign(room, 'AI hỗ trợ con người · Con người chịu trách nhiệm', 4.98, 4.65, -6.18, 6.05, 0.48, '#47766b', 58);
+  wallSign(room, 'Con người sáng tạo văn hóa · Văn hóa bồi dưỡng con người', 4.98, 4.65, -6.18, 6.05, 0.48, '#47766b', 51);
 
   const artMeshes = [];
   const leftZ = [-4.94, -2.55, -0.16, 2.23, 4.62];

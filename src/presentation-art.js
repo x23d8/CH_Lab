@@ -1,138 +1,119 @@
-const lessons = [
+const museumPhotoArticle = 'https://baotanghochiminh.vn/chu-tich-ho-chi-minh-cang-gian-di-cang-vi-dai.htm';
+const museumWorkArticle = 'https://baotanghochiminh.vn/gia-tri-phong-cach-lam-viec-cua-chu-tich-ho-chi-minh-doi-voi-cong-tac-xay-dung-chinh-don-dang-hien-nay.htm';
+const museumStudentArticle = 'https://baotanghochiminh.vn/hoc-tap-tam-guong-lam-viec-trach-nhiem-khoa-hoc-doi-moi-cua-chu-tich-ho-chi-minh.htm';
+const museumCultureArticle = 'https://baotanghochiminh.vn/bao-tang-ho-chi-minh-khai-mac-trung-bay-chuyen-de-ho-chi-minh-chan-dung-mot-con-nguoi.htm';
+
+export const artworks = [
   {
-    title: 'AI trong lớp học', category: 'Con người làm chủ công nghệ', theme: 'classroom', poster: 'AI + LEARNING',
-    note: 'AI có thể hỗ trợ học tập, nhưng mục tiêu, quyết định và trách nhiệm vẫn thuộc về con người.',
-    points: ['Dùng AI để gợi ý, giải thích và luyện tập.', 'Tự suy nghĩ trước khi chấp nhận câu trả lời.', 'Giảng viên và sinh viên cùng đặt quy tắc sử dụng rõ ràng.'],
-    sourceLabel: 'UNESCO · Trí tuệ nhân tạo trong giáo dục', sourceUrl: 'https://www.unesco.org/en/digital-education/artificial-intelligence',
+    title: 'Văn hóa là gì?',
+    category: 'Một hệ thống giá trị do con người sáng tạo',
+    imageUrl: '/hcm-gallery/08-van-hoa.jpg',
+    imageAlt: 'Không gian trưng bày về văn hóa tại Bảo tàng Hồ Chí Minh',
+    note: 'Văn hóa không chỉ là văn nghệ. Đó còn là cách con người sống, học tập, tổ chức xã hội và tạo ra những giá trị phục vụ đời sống.',
+    points: [
+      'Theo nghĩa rộng, văn hóa bao gồm toàn bộ những giá trị vật chất và tinh thần do con người sáng tạo.',
+      'Theo nghĩa hẹp, văn hóa gắn với đời sống tinh thần và các hoạt động sáng tạo.',
+      'Văn hóa còn được nhìn từ giáo dục, học vấn và những công cụ con người dùng trong đời sống.',
+    ],
+    sourceLabel: 'Bảo tàng Hồ Chí Minh · Trưng bày chuyên đề về văn hóa',
+    sourceUrl: museumCultureArticle,
   },
   {
-    title: 'Năng lực AI của sinh viên', category: 'Hiểu · Dùng · Sáng tạo', theme: 'competency', poster: 'HUMAN  ETHICS  TECH  DESIGN',
-    note: 'Năng lực AI gồm tư duy lấy con người làm trung tâm, đạo đức, kỹ thuật ứng dụng và thiết kế hệ thống.',
-    points: ['Hiểu AI có thể và không thể làm gì.', 'Áp dụng AI đúng bối cảnh và có trách nhiệm.', 'Sáng tạo giải pháp nhưng vẫn giữ quyền kiểm soát của con người.'],
-    sourceLabel: 'UNESCO · Khung năng lực AI cho học sinh, sinh viên', sourceUrl: 'https://www.unesco.org/en/articles/ai-competency-framework-students?hub=84624',
+    title: 'Văn hóa trong đời sống',
+    category: 'Văn hóa ⇄ Chính trị · Kinh tế · Xã hội',
+    imageUrl: '/hcm-gallery/01-lam-viec.jpg',
+    imageAlt: 'Chủ tịch Hồ Chí Minh làm việc tại Phủ Chủ tịch',
+    note: 'Văn hóa không đứng ngoài đời sống. Nó gắn chặt với chính trị, kinh tế và xã hội, đồng thời góp phần định hướng cách con người lao động và ứng xử.',
+    points: [
+      'Phát triển văn hóa cần đi cùng với phát triển kinh tế, chính trị và xã hội.',
+      'Bản sắc dân tộc là nền tảng để cộng đồng nhận ra mình và giữ cốt cách riêng.',
+      'Tiếp thu tinh hoa nhân loại cần có chọn lọc, phù hợp với điều kiện và giá trị của dân tộc.',
+    ],
+    sourceLabel: 'Bảo tàng Hồ Chí Minh · Tư liệu về phong cách làm việc',
+    sourceUrl: museumWorkArticle,
   },
   {
-    title: 'AI học từ dữ liệu', category: 'Dữ liệu và mô hình', theme: 'data', poster: 'DATA  >  MODEL  >  CHECK',
-    note: 'Mô hình AI tìm quy luật trong dữ liệu. Chất lượng dữ liệu ảnh hưởng trực tiếp đến độ chính xác và tính công bằng của kết quả.',
-    points: ['Dữ liệu thiếu hoặc lệch có thể tạo kết quả sai lệch.', 'Kết quả tốt trong bài thử chưa chắc đúng ở mọi tình huống.', 'Luôn kiểm tra mô hình với dữ liệu phù hợp mục đích sử dụng.'],
-    sourceLabel: 'NIST · Nền tảng và đo lường AI', sourceUrl: 'https://www.nist.gov/fundamental-ai',
+    title: 'Bốn vai trò của văn hóa',
+    category: 'Mục tiêu · Động lực · Mặt trận · Phục vụ nhân dân',
+    imageUrl: '/hcm-gallery/06-thieu-nhi.jpg',
+    imageAlt: 'Chủ tịch Hồ Chí Minh chăm sóc một em nhỏ',
+    note: 'Văn hóa hướng tới cuộc sống tốt đẹp, khơi dậy sức mạnh hành động, đấu tranh với điều lạc hậu và cuối cùng phải phục vụ con người.',
+    points: [
+      'Là mục tiêu: hướng tới đời sống có tri thức, đạo đức và nhân văn.',
+      'Là động lực và mặt trận: tạo sức mạnh tinh thần, bảo vệ cái đúng và cái tiến bộ.',
+      'Phục vụ nhân dân: sản phẩm văn hóa cần dễ tiếp cận và giúp đời sống con người tốt hơn.',
+    ],
+    sourceLabel: 'Bảo tàng Hồ Chí Minh · Tư liệu ảnh về đời sống giản dị',
+    sourceUrl: museumPhotoArticle,
   },
   {
-    title: 'AI tạo sinh có kiểm chứng', category: 'Hỏi rõ · Kiểm tra kỹ', theme: 'verify', poster: 'PROMPT  >  OUTPUT  >  VERIFY',
-    note: 'AI tạo sinh có thể viết nội dung thuyết phục nhưng vẫn có thể bịa dữ kiện, thiếu ngữ cảnh hoặc dẫn nguồn không tồn tại.',
-    points: ['Viết yêu cầu có mục tiêu và bối cảnh rõ.', 'Đối chiếu dữ kiện bằng nguồn đáng tin cậy.', 'Nêu rõ phần nào có AI hỗ trợ khi quy định yêu cầu.'],
-    sourceLabel: 'UNESCO · Hướng dẫn AI tạo sinh trong giáo dục', sourceUrl: 'https://www.unesco.org/en/articles/guidance-generative-ai-education-and-research?hub=394',
+    title: 'Nền văn hóa mới',
+    category: 'Dân tộc · Khoa học · Đại chúng',
+    imageUrl: '/hcm-gallery/07-trien-lam.jpg',
+    imageAlt: 'Hiện vật trong không gian trưng bày của Bảo tàng Hồ Chí Minh',
+    note: 'Nền văn hóa mới vừa giữ cốt cách dân tộc, vừa tiến bộ và có căn cứ khoa học, vừa do nhân dân xây dựng và phục vụ đông đảo nhân dân.',
+    points: [
+      'Dân tộc: gìn giữ bản sắc và phát huy những giá trị tốt đẹp của Việt Nam.',
+      'Khoa học: chống mê tín, lạc hậu; hướng tới tiến bộ và những điều có căn cứ.',
+      'Đại chúng: để mọi người được tham gia sáng tạo, tiếp cận và thụ hưởng văn hóa.',
+    ],
+    sourceLabel: 'Bảo tàng Hồ Chí Minh · Không gian trưng bày chuyên đề',
+    sourceUrl: museumCultureArticle,
   },
   {
-    title: 'AI đáng tin cậy', category: 'An toàn và trách nhiệm', theme: 'trust', poster: 'SAFE  FAIR  PRIVATE  CLEAR',
-    note: 'Một hệ thống AI đáng tin cậy cần chính xác trong bối cảnh sử dụng, an toàn, minh bạch, bảo vệ riêng tư và giảm thiên lệch có hại.',
-    points: ['Không nhập dữ liệu cá nhân hoặc bí mật khi chưa được phép.', 'Tìm dấu hiệu thiên lệch giữa các nhóm người dùng.', 'Cần biết giới hạn và lý do đằng sau quyết định quan trọng.'],
-    sourceLabel: 'NIST · AI đáng tin cậy và có trách nhiệm', sourceUrl: 'https://www.nist.gov/trustworthy-and-responsible-ai',
+    title: 'Con người cụ thể, toàn diện',
+    category: 'Trí tuệ · Tâm hồn · Thể lực · Quan hệ xã hội',
+    imageUrl: '/hcm-gallery/05-ren-luyen.jpg',
+    imageAlt: 'Chủ tịch Hồ Chí Minh rèn luyện thể thao cùng cán bộ',
+    note: 'Con người luôn sống trong hoàn cảnh lịch sử và những mối quan hệ cụ thể. Phát triển con người vì thế cần chăm lo đồng thời nhiều mặt.',
+    points: [
+      'Bồi dưỡng tri thức và năng lực suy nghĩ độc lập.',
+      'Rèn luyện đạo đức, cảm xúc, lối sống và trách nhiệm với người khác.',
+      'Chăm sóc thể lực, sức khỏe và khả năng tham gia đời sống cộng đồng.',
+    ],
+    sourceLabel: 'Bảo tàng Hồ Chí Minh · Tư liệu rèn luyện thân thể',
+    sourceUrl: museumPhotoArticle,
   },
   {
-    title: 'Quản trị rủi ro AI', category: 'Bốn bước liên tục', theme: 'risk', poster: 'GOVERN  MAP  MEASURE  MANAGE',
-    note: 'Khung quản trị rủi ro AI của NIST tổ chức công việc thành bốn chức năng liên kết: Govern, Map, Measure và Manage.',
-    points: ['Govern: phân công trách nhiệm và nguyên tắc.', 'Map: hiểu bối cảnh, người bị ảnh hưởng và rủi ro.', 'Measure và Manage: đo, ưu tiên rồi xử lý rủi ro.'],
-    sourceLabel: 'NIST · Khung quản trị rủi ro AI', sourceUrl: 'https://www.nist.gov/itl/ai-risk-management-framework',
+    title: 'Con người là mục tiêu và động lực',
+    category: 'Phát triển vì con người · Phát triển bằng sức người',
+    imageUrl: '/hcm-gallery/02-doc-sach.jpg',
+    imageAlt: 'Chủ tịch Hồ Chí Minh cùng cán bộ vượt suối trong kháng chiến',
+    note: 'Mọi sự phát triển phải hướng tới tự do, hạnh phúc và sự trưởng thành của con người; chính con người cũng là chủ thể tạo nên sự thay đổi đó.',
+    points: [
+      'Là mục tiêu: thành quả phát triển phải nâng cao đời sống vật chất và tinh thần của con người.',
+      'Là động lực: sức dân, trí tuệ, lao động và tinh thần đoàn kết tạo ra tiến bộ.',
+      'Tôn trọng con người cũng có nghĩa là tạo điều kiện để mỗi người chủ động đóng góp.',
+    ],
+    sourceLabel: 'Bảo tàng Hồ Chí Minh · Tư liệu hoạt động cùng cán bộ',
+    sourceUrl: museumPhotoArticle,
   },
   {
-    title: 'AI vì sức khỏe con người', category: 'Đạo đức trong thực tế', theme: 'health', poster: 'HUMAN + AI  /  HEALTH',
-    note: 'AI có thể hỗ trợ y tế, nhưng phải bảo vệ quyền tự chủ, sự an toàn, riêng tư và lợi ích của người bệnh.',
-    points: ['Chuyên gia chịu trách nhiệm cho quyết định cuối cùng.', 'Dữ liệu sức khỏe cần được bảo vệ nghiêm ngặt.', 'Lợi ích và rủi ro phải được đánh giá cho từng nhóm người.'],
-    sourceLabel: 'WHO · Đạo đức và quản trị AI cho sức khỏe', sourceUrl: 'https://www.who.int/publications/i/item/9789240029200',
+    title: 'Chiến lược “trồng người”',
+    category: 'Hồng + Chuyên · Tự rèn luyện + Môi trường',
+    imageUrl: '/hcm-gallery/03-hoc-sinh.jpg',
+    imageAlt: 'Chủ tịch Hồ Chí Minh với học sinh Trường Trưng Vương, Hà Nội',
+    note: 'Bồi dưỡng con người là công việc lâu dài. Phẩm chất tốt cần đi cùng năng lực, còn nỗ lực cá nhân cần được nâng đỡ bởi giáo dục và môi trường lành mạnh.',
+    points: [
+      '“Hồng” định hướng lý tưởng, đạo đức, lối sống và trách nhiệm.',
+      '“Chuyên” gồm tri thức, kỹ năng, tác phong và khả năng hoàn thành công việc.',
+      'Giáo dục, tổ chức, cơ chế, dân chủ, nêu gương và phong trào cùng tạo môi trường rèn luyện.',
+    ],
+    sourceLabel: 'Bảo tàng Hồ Chí Minh · Tư liệu Chủ tịch Hồ Chí Minh với học sinh',
+    sourceUrl: museumStudentArticle,
   },
   {
-    title: 'AI trong khoa học không gian', category: 'Từ dữ liệu đến khám phá', theme: 'space', poster: 'AI FOR SCIENCE  /  NASA',
-    note: 'NASA dùng AI để phân tích ảnh vệ tinh, tìm mẫu trong dữ liệu khoa học và hỗ trợ phương tiện tự hành khám phá những nơi xa xôi.',
-    points: ['AI giúp xử lý lượng dữ liệu lớn nhanh hơn.', 'Xe tự hành cần thích nghi khi tín hiệu điều khiển bị trễ.', 'Nhà khoa học vẫn kiểm tra và diễn giải kết quả.'],
-    sourceLabel: 'NASA · Artificial Intelligence', sourceUrl: 'https://www.nasa.gov/artificial-intelligence/',
+    title: 'Từ tư tưởng đến hành động sinh viên',
+    category: 'Văn hóa từ ta · Con người vì cộng đồng',
+    imageUrl: '/hcm-gallery/04-cong-dong.jpg',
+    imageAlt: 'Chủ tịch Hồ Chí Minh rèn luyện cùng các cán bộ trong chiến khu',
+    note: 'Giá trị văn hóa trở nên sống động khi được thể hiện bằng hành vi hằng ngày trong lớp học, trên mạng và trong cộng đồng.',
+    points: [
+      'Học có nguồn: kiểm chứng, ghi nguồn và minh bạch khi dùng công cụ hỗ trợ.',
+      'Nói có trách nhiệm, làm có kỷ luật: tôn trọng người khác và hoàn thành phần việc đã cam kết.',
+      'Sống vì cộng đồng: chủ động góp sức, chia sẻ điều hữu ích và bảo vệ môi trường chung.',
+    ],
+    sourceLabel: 'Bảo tàng Hồ Chí Minh · Tư liệu rèn luyện tập thể',
+    sourceUrl: museumPhotoArticle,
   },
 ];
-
-const palette = {
-  ink: '#163d55', navy: '#102f46', blue: '#63b7d5', mint: '#7bc5aa', yellow: '#ffd166',
-  coral: '#f07f72', cream: '#fff9e8', white: '#ffffff', purple: '#8d86d8',
-};
-const fill = (ctx, color) => { ctx.fillStyle = color; };
-function stroke(ctx, color, width = 4) { ctx.strokeStyle = color; ctx.lineWidth = width; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; }
-function roundRect(ctx, x, y, width, height, radius, color) { ctx.beginPath(); ctx.roundRect(x, y, width, height, radius); fill(ctx, color); ctx.fill(); }
-function circle(ctx, x, y, radius, color) { ctx.beginPath(); ctx.arc(x, y, radius, 0, Math.PI * 2); fill(ctx, color); ctx.fill(); }
-function line(ctx, points, color, width = 4) { ctx.beginPath(); ctx.moveTo(...points[0]); points.slice(1).forEach(point => ctx.lineTo(...point)); stroke(ctx, color, width); ctx.stroke(); }
-function label(ctx, value, x, y, size = 24, color = palette.ink, align = 'center') {
-  ctx.font = `800 ${size}px "Trebuchet MS", Arial, sans-serif`; ctx.textAlign = align; ctx.textBaseline = 'middle'; fill(ctx, color); ctx.fillText(value, x, y);
-}
-function node(ctx, x, y, color, radius = 24) { circle(ctx, x, y, radius, color); circle(ctx, x, y, radius * .36, palette.cream); }
-function arrow(ctx, x1, y1, x2, y2, color = palette.ink) {
-  line(ctx, [[x1, y1], [x2, y2]], color, 7);
-  const angle = Math.atan2(y2 - y1, x2 - x1); const length = 16;
-  line(ctx, [[x2, y2], [x2 - Math.cos(angle - .55) * length, y2 - Math.sin(angle - .55) * length]], color, 7);
-  line(ctx, [[x2, y2], [x2 - Math.cos(angle + .55) * length, y2 - Math.sin(angle + .55) * length]], color, 7);
-}
-function drawHuman(ctx, x, y, color = palette.coral) {
-  circle(ctx, x, y - 52, 22, color); roundRect(ctx, x - 28, y - 23, 56, 74, 23, color);
-  line(ctx, [[x - 18, y + 46], [x - 31, y + 92]], palette.ink, 9); line(ctx, [[x + 18, y + 46], [x + 31, y + 92]], palette.ink, 9);
-}
-function drawChip(ctx, x, y, size = 108, color = palette.blue) {
-  roundRect(ctx, x - size / 2, y - size / 2, size, size, 20, color); roundRect(ctx, x - size * .28, y - size * .28, size * .56, size * .56, 13, palette.navy);
-  for (let i = -1; i <= 1; i++) {
-    line(ctx, [[x - size / 2 - 14, y + i * size * .25], [x - size / 2, y + i * size * .25]], palette.ink, 5);
-    line(ctx, [[x + size / 2, y + i * size * .25], [x + size / 2 + 14, y + i * size * .25]], palette.ink, 5);
-    line(ctx, [[x + i * size * .25, y - size / 2 - 14], [x + i * size * .25, y - size / 2]], palette.ink, 5);
-    line(ctx, [[x + i * size * .25, y + size / 2], [x + i * size * .25, y + size / 2 + 14]], palette.ink, 5);
-  }
-  label(ctx, 'AI', x, y + 1, Math.round(size * .32), palette.white);
-}
-
-function drawTheme(ctx, theme) {
-  if (theme === 'classroom') {
-    roundRect(ctx, 55, 96, 530, 278, 30, '#dff2eb'); drawHuman(ctx, 160, 218); drawChip(ctx, 447, 213, 126);
-    arrow(ctx, 235, 204, 360, 204, palette.purple); arrow(ctx, 360, 252, 235, 252, palette.mint);
-    label(ctx, 'ASK', 296, 181, 18, palette.purple); label(ctx, 'CHECK', 296, 277, 18, palette.mint);
-  } else if (theme === 'competency') {
-    [['HUMAN', palette.coral], ['ETHICS', palette.yellow], ['TECH', palette.blue], ['DESIGN', palette.mint]].forEach(([value, color], index) => {
-      const x = 55 + (index % 2) * 267; const y = 98 + Math.floor(index / 2) * 142;
-      roundRect(ctx, x, y, 252, 126, 24, color); node(ctx, x + 52, y + 63, palette.cream, 28); label(ctx, value, x + 100, y + 63, 24, palette.navy, 'left');
-    });
-  } else if (theme === 'data') {
-    [[135, 'DATA', palette.yellow], [320, 'MODEL', palette.blue], [505, 'CHECK', palette.mint]].forEach(([x, value, color]) => {
-      roundRect(ctx, x - 65, 139, 130, 150, 26, color); node(ctx, x, 190, palette.cream, 31); label(ctx, value, x, 254, 21);
-    });
-    arrow(ctx, 205, 214, 250, 214, palette.purple); arrow(ctx, 390, 214, 435, 214, palette.purple);
-    line(ctx, [[108, 324], [532, 324]], palette.ink, 6); [108, 214, 320, 426, 532].forEach((x, i) => circle(ctx, x, 324 - [16, -6, 12, -13, 8][i], 8, palette.coral));
-  } else if (theme === 'verify') {
-    [[120, 'PROMPT', palette.yellow], [320, 'OUTPUT', palette.blue], [520, 'VERIFY', palette.mint]].forEach(([x, value, color]) => { circle(ctx, x, 215, 68, color); label(ctx, value, x, 215, 20); });
-    arrow(ctx, 194, 215, 240, 215, palette.purple); arrow(ctx, 394, 215, 440, 215, palette.purple); line(ctx, [[489, 211], [514, 236], [553, 183]], palette.white, 12);
-  } else if (theme === 'trust') {
-    drawChip(ctx, 320, 214, 116, palette.purple);
-    [[145, 135, 'SAFE', palette.coral], [495, 135, 'FAIR', palette.yellow], [145, 302, 'PRIVATE', palette.blue], [495, 302, 'CLEAR', palette.mint]].forEach(([x, y, value, color]) => {
-      line(ctx, [[320, 214], [x, y]], '#aacbd2', 5); roundRect(ctx, x - 65, y - 31, 130, 62, 18, color); label(ctx, value, x, y, 18);
-    });
-  } else if (theme === 'risk') {
-    [['GOVERN', palette.coral], ['MAP', palette.yellow], ['MEASURE', palette.blue], ['MANAGE', palette.mint]].forEach(([value, color], index) => {
-      const angle = -Math.PI / 2 + index * Math.PI / 2; const x = 320 + Math.cos(angle) * 148; const y = 222 + Math.sin(angle) * 112;
-      roundRect(ctx, x - 72, y - 32, 144, 64, 18, color); label(ctx, value, x, y, 18);
-    });
-    circle(ctx, 320, 222, 48, palette.navy); label(ctx, 'RISK', 320, 222, 21, palette.white);
-  } else if (theme === 'health') {
-    roundRect(ctx, 70, 112, 500, 242, 32, '#dff2eb'); drawHuman(ctx, 175, 218); drawChip(ctx, 465, 214, 108);
-    line(ctx, [[236, 220], [267, 220], [282, 192], [303, 250], [325, 205], [344, 220], [397, 220]], palette.coral, 7);
-  } else if (theme === 'space') {
-    fill(ctx, palette.navy); ctx.fillRect(38, 82, 564, 292);
-    [[78, 119], [553, 134], [490, 318], [172, 330], [342, 112]].forEach(([x, y], i) => circle(ctx, x, y, i % 2 ? 3 : 5, palette.yellow));
-    circle(ctx, 482, 207, 70, '#d88869'); circle(ctx, 461, 185, 15, '#b86458'); circle(ctx, 510, 228, 11, '#b86458');
-    roundRect(ctx, 135, 218, 116, 58, 16, palette.cream); circle(ctx, 158, 288, 21, palette.ink); circle(ctx, 228, 288, 21, palette.ink);
-    line(ctx, [[192, 218], [192, 165], [229, 147]], palette.cream, 7); circle(ctx, 238, 143, 10, palette.yellow);
-    line(ctx, [[263, 194], [376, 173]], palette.blue, 4); line(ctx, [[263, 215], [389, 215]], palette.blue, 4); line(ctx, [[263, 236], [376, 257]], palette.blue, 4);
-  }
-}
-
-function makePainting(lesson, index) {
-  const canvas = document.createElement('canvas'); canvas.width = 640; canvas.height = 480; const ctx = canvas.getContext('2d');
-  const gradient = ctx.createLinearGradient(0, 0, 640, 480); gradient.addColorStop(0, '#fff8dd'); gradient.addColorStop(1, '#cce9df');
-  fill(ctx, gradient); ctx.fillRect(0, 0, 640, 480); circle(ctx, 590, 35, 95, 'rgba(255,255,255,.55)'); circle(ctx, 48, 425, 100, 'rgba(99,183,213,.12)');
-  roundRect(ctx, 24, 20, 174, 42, 21, palette.white); label(ctx, `AI LAB  /  0${index + 1}`, 111, 41, 17, palette.navy); label(ctx, 'LEARN  TEST  CREATE', 614, 41, 14, palette.ink, 'right');
-  drawTheme(ctx, lesson.theme); fill(ctx, palette.navy); ctx.fillRect(0, 415, 640, 65); fill(ctx, palette.yellow); ctx.fillRect(0, 415, 640, 6); label(ctx, lesson.poster, 320, 450, 25, palette.white);
-  return canvas;
-}
-
-export const artworks = lessons.map((lesson, index) => ({ ...lesson, canvas: makePainting(lesson, index) }));

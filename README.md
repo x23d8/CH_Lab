@@ -1,13 +1,14 @@
-# AI Lab · Lớp học tương tác 3D
+# Văn hóa từ ta · Lớp học tương tác HCM202
 
-Lớp học 3D bằng Three.js và Vite giúp sinh viên khám phá tám chủ đề về trí tuệ nhân tạo, kiểm chứng đầu ra và sử dụng AI có trách nhiệm. Người chơi có thể chọn avatar, di chuyển, trò chuyện theo phòng, xem tranh, chơi quiz, ngồi vào ghế và cùng tham gia bài kiểm tra 15 phút.
+Lớp học 3D bằng Three.js và Vite chuyển nội dung bài thuyết trình **“Văn hóa và con người trong tư tưởng Hồ Chí Minh”** thành tám trạm khám phá. Thông điệp xuyên suốt là **“Văn hóa từ ta – Con người vì cộng đồng”**. Người chơi có thể chọn avatar, di chuyển, trò chuyện theo phòng, xem ảnh tư liệu, chơi quiz, ngồi vào ghế và cùng tham gia bài kiểm tra 15 phút.
 
 ## Chạy bản trực tuyến
 
 1. Tạo dự án Supabase. Trong **Authentication → Providers**, bật **Anonymous Sign-Ins**.
-2. Với dự án mới, chạy lần lượt các migration trong `supabase/migrations` theo thứ tự tên file. Với dự án đã cài trước đó, chạy thêm [migration avatar và reset bảng xếp hạng](supabase/migrations/20261006_avatar_profiles.sql), sau đó chạy [migration nội dung AI](supabase/migrations/20261006_ai_classroom_content.sql). Migration nội dung AI đưa bài kiểm tra về trạng thái chờ và xóa kết quả của lượt hiện tại để tránh thay câu hỏi giữa lúc đang thi.
-3. Tạo `.env` từ `.env.example` và điền URL cùng **publishable key**. Không đưa `service_role` hoặc secret key vào ứng dụng trình duyệt. Các biến `NEXT_PUBLIC_SUPABASE_URL` và `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` cũng được hỗ trợ.
-4. Chạy:
+2. Với dự án mới, chạy lần lượt các migration trong `supabase/migrations` theo thứ tự tên file.
+3. Với dự án đã cài trước đó, chạy thêm [migration nội dung HCM202 mới nhất](supabase/migrations/20261006_z_hcm202_showcase_content.sql). Migration đưa bài kiểm tra về trạng thái chờ và xóa kết quả của lượt hiện tại để tránh thay câu hỏi giữa lúc đang thi.
+4. Tạo `.env` từ `.env.example` và điền URL cùng **publishable key**. Không đưa `service_role` hoặc secret key vào ứng dụng trình duyệt. Các biến `NEXT_PUBLIC_SUPABASE_URL` và `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` cũng được hỗ trợ.
+5. Chạy:
 
 ```bash
 npm install
@@ -32,16 +33,15 @@ Khi triển khai Vercel, đặt `VITE_SUPABASE_URL` và `VITE_SUPABASE_PUBLISHAB
 - Nhấp tranh hoặc TV để xem nội dung, hoặc tới gần rồi nhấn `E`.
 - Trên điện thoại, dùng joystick ở góc dưới trái.
 
-## Nguồn nội dung AI
+## Nguồn nội dung và ảnh tư liệu
 
-Các tranh là đồ họa vector được vẽ trực tiếp trong ứng dụng để hiển thị ổn định và tránh lỗi chữ. Nội dung được biên soạn từ các nguồn chính thức:
+Nội dung tám trạm bám theo bộ thuyết trình và kịch bản trong `D:\HCM202_TT_Templates_FA26_Updated\05_Showcase_Slides_Script`. Giao diện không hiển thị dòng trích dẫn slide hoặc số trang; mỗi ảnh vẫn có liên kết đến trang nguồn chính thức.
 
-- [UNESCO · AI trong giáo dục](https://www.unesco.org/en/digital-education/artificial-intelligence)
-- [UNESCO · Khung năng lực AI cho học sinh, sinh viên](https://www.unesco.org/en/articles/ai-competency-framework-students?hub=84624)
-- [UNESCO · Hướng dẫn AI tạo sinh trong giáo dục và nghiên cứu](https://www.unesco.org/en/articles/guidance-generative-ai-education-and-research?hub=394)
-- [NIST · AI đáng tin cậy và có trách nhiệm](https://www.nist.gov/trustworthy-and-responsible-ai)
-- [NIST · Khung quản trị rủi ro AI](https://www.nist.gov/itl/ai-risk-management-framework)
-- [WHO · Đạo đức và quản trị AI cho sức khỏe](https://www.who.int/publications/i/item/9789240029200)
-- [NASA · Artificial Intelligence](https://www.nasa.gov/artificial-intelligence/)
+Ảnh trong `public/hcm-gallery` được lấy từ các bài viết và không gian trưng bày chính thức của Bảo tàng Hồ Chí Minh:
+
+- [Phong cách làm việc của Chủ tịch Hồ Chí Minh](https://baotanghochiminh.vn/gia-tri-phong-cach-lam-viec-cua-chu-tich-ho-chi-minh-doi-voi-cong-tac-xay-dung-chinh-don-dang-hien-nay.htm)
+- [Học tập tấm gương làm việc trách nhiệm, khoa học, đổi mới](https://baotanghochiminh.vn/hoc-tap-tam-guong-lam-viec-trach-nhiem-khoa-hoc-doi-moi-cua-chu-tich-ho-chi-minh.htm)
+- [Chủ tịch Hồ Chí Minh càng giản dị càng vĩ đại](https://baotanghochiminh.vn/chu-tich-ho-chi-minh-cang-gian-di-cang-vi-dai.htm)
+- [Trưng bày chuyên đề “Hồ Chí Minh – Chân dung một con người”](https://baotanghochiminh.vn/bao-tang-ho-chi-minh-khai-mac-trung-bay-chuyen-de-ho-chi-minh-chan-dung-mot-con-nguoi.htm)
 
 Sprite Flappy Bird có giấy phép MIT nằm trong `public/flappy`.

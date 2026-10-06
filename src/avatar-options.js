@@ -1,5 +1,5 @@
 export const AVATAR_OPTIONS = [
-  { id: 'male-classic', name: 'Nam AI Lab', gender: 'male', genderLabel: 'Nam', description: 'Nhân vật đồng phục hiện tại', accent: '#6f9fb0', procedural: true },
+  { id: 'male-classic', name: 'Nam cổ điển', gender: 'male', genderLabel: 'Nam', description: 'Nhân vật đồng phục hiện tại', accent: '#6f9fb0', procedural: true },
   { id: 'agnes-tachyon', name: 'Agnes Tachyon', gender: 'female', genderLabel: 'Nữ', description: 'Model chibi áo blouse', accent: '#9b826f' },
   { id: 'chikawa', name: 'Chikawa', gender: 'other', genderLabel: 'Linh vật', description: 'Nhân vật nhỏ đáng yêu', accent: '#e3a99b' },
   { id: 'megumin', name: 'Megumin & Chomosuke', gender: 'female', genderLabel: 'Nữ', description: 'Pháp sư chibi cùng mèo', accent: '#a75955' },

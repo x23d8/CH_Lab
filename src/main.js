@@ -20,7 +20,7 @@ const avatarOptionsMarkup = AVATAR_OPTIONS.map((option, index) => `
 document.querySelector('#app').innerHTML = `
   <main class="experience">
     <div class="scene-shell">
-      <canvas id="classroom" aria-label="AI Lab 3D tương tác"></canvas>
+      <canvas id="classroom" aria-label="Lớp học 3D tương tác về văn hóa và con người"></canvas>
       <div class="soft-light" aria-hidden="true"></div>
     </div>
 
@@ -28,12 +28,12 @@ document.querySelector('#app').innerHTML = `
       <div class="brand">
         <div class="brand-mark" role="img" aria-label="Quốc kỳ Việt Nam"><svg viewBox="0 0 48 32" aria-hidden="true" focusable="false"><rect width="48" height="32" fill="#da251d"/><polygon points="24,6.6 26.2,13 32.9,13 27.5,17.1 29.5,23.7 24,19.7 18.5,23.7 20.5,17.1 15.1,13 21.8,13" fill="#ffff00"/></svg></div>
         <div>
-          <p class="eyebrow">KHÔNG GIAN HỌC AI CÓ TRÁCH NHIỆM</p>
-          <h1>AI Lab <em>Tương tác</em></h1>
+          <p class="eyebrow">CẨM NANG SỐ HCM202</p>
+          <h1>Văn hóa từ ta <em>Tương tác</em></h1>
         </div>
       </div>
       <div class="top-actions">
-        <span class="sunny-pill">${sunIcon}<span>Học AI bằng tư duy phản biện</span></span>
+        <span class="sunny-pill">${sunIcon}<span>Con người vì cộng đồng</span></span>
         <span id="lan-status" class="lan-status" role="status">Chưa vào lớp</span>
         <span id="online-count" class="lan-status online-count" role="status">0 trực tuyến · 0 đã ngồi · Phòng 1</span>
         <button id="chat-button" class="score-button chat-button" type="button" aria-expanded="false" aria-controls="chat-panel" title="Trò chuyện trong phòng"><span class="chat-icon" aria-hidden="true">●</span><span class="chat-label">Trò chuyện</span><span id="chat-unread" class="chat-unread hidden" aria-label="Tin nhắn chưa đọc"></span></button>
@@ -77,8 +77,8 @@ document.querySelector('#app').innerHTML = `
       <div class="profile-backdrop"></div>
       <article class="profile-card" role="dialog" aria-modal="true" aria-labelledby="profile-title">
         <div class="profile-copy">
-          <p class="section-label">THẺ VÀO AI LAB</p>
-          <h2 id="profile-title">Chọn nhân vật để bước vào phòng học AI</h2>
+          <p class="section-label">THẺ VÀO LỚP HCM202</p>
+          <h2 id="profile-title">Chọn nhân vật để bước vào lớp học</h2>
           <p>Đặt tên, chọn nhân vật và phòng học. Hồ sơ sẽ xuất hiện với mọi người trong cùng phòng.</p>
           <div class="profile-note"><span>✦</span><span>Mỗi model có chuyển động đứng yên, đi bộ và ngồi. Bạn có thể đổi lại nhân vật bất cứ lúc nào.</span></div>
         </div>
@@ -92,20 +92,20 @@ document.querySelector('#app').innerHTML = `
             <div class="avatar-options" id="avatar-options">${avatarOptionsMarkup}</div>
           </fieldset>
           <p id="profile-error" class="profile-error hidden" role="alert"></p>
-          <button class="profile-enter" type="submit">Vào AI Lab <span>→</span></button>
+          <button class="profile-enter" type="submit">Vào lớp học <span>→</span></button>
         </form>
       </article>
     </div>
 
     <div class="floating-info floating-intro">
       <button id="intro-toggle" class="bubble-trigger" type="button" aria-expanded="false" aria-controls="intro-card">
-        <span class="bubble-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" focusable="false"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.7"/><path d="m15.8 8.2-2.3 5.3-5.3 2.3 2.3-5.3 5.3-2.3Z" fill="currentColor"/><circle cx="12" cy="12" r="1" fill="#fff9df"/></svg></span><span>Khám phá AI Lab</span>
+        <span class="bubble-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" focusable="false"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.7"/><path d="m15.8 8.2-2.3 5.3-5.3 2.3 2.3-5.3 5.3-2.3Z" fill="currentColor"/><circle cx="12" cy="12" r="1" fill="#fff9df"/></svg></span><span>Khám phá cẩm nang số</span>
       </button>
       <section id="intro-card" class="intro-card bubble-content hidden" aria-label="Giới thiệu lớp học">
         <span class="small-star">✳</span>
-        <p class="section-label">CHÀO MỪNG BẠN ĐẾN AI LAB</p>
-        <p>Khám phá tám chủ đề về cách AI hoạt động, cách kiểm chứng đầu ra và cách sử dụng công nghệ có trách nhiệm.</p>
-        <div class="art-count"><span class="count-dot"></span><strong>08</strong> chủ đề AI đang chờ bạn</div>
+        <p class="section-label">VĂN HÓA VÀ CON NGƯỜI TRONG TƯ TƯỞNG HỒ CHÍ MINH</p>
+        <p>Khám phá cách văn hóa do con người sáng tạo và đồng thời bồi dưỡng con người, rồi chuyển hóa thành hành vi thiết thực của sinh viên.</p>
+        <div class="art-count"><span class="count-dot"></span><strong>08</strong> chủ đề đang chờ bạn</div>
       </section>
     </div>
 
@@ -115,7 +115,7 @@ document.querySelector('#app').innerHTML = `
       <button id="inspect-button" type="button"><span id="nearby-action">Xem tranh</span> <kbd>E</kbd></button>
     </div>
 
-    <p class="scene-caption"><span class="caption-line"></span> AI hữu ích khi con người hiểu và kiểm chứng <span>✳</span></p>
+    <p class="scene-caption"><span class="caption-line"></span> Văn hóa từ ta · Con người vì cộng đồng <span>✳</span></p>
 
     <div class="mobile-pad" aria-label="Joystick di chuyển" role="group">
       <div class="joystick" aria-label="Kéo để di chuyển theo mọi hướng">
@@ -129,12 +129,12 @@ document.querySelector('#app').innerHTML = `
         <button class="close-button" id="close-modal" type="button" aria-label="Đóng">×</button>
         <div class="art-preview"><img id="art-image" alt="" /></div>
         <div class="art-copy">
-          <p class="section-label">CHỦ ĐỀ AI TRONG LỚP <span>✦</span> <span id="art-category"></span></p>
+          <p class="section-label">CHỦ ĐỀ TRONG BÀI THUYẾT TRÌNH <span>✦</span> <span id="art-category"></span></p>
           <h2 id="art-title"></h2>
           <p id="art-note"></p>
           <ul id="art-points" class="art-points"></ul>
           <a id="art-source" class="art-source" target="_blank" rel="noopener noreferrer"></a>
-          <div class="art-footer"><span>Hiểu kỹ rồi mới dùng AI nhé!</span><button id="next-art" type="button">Chủ đề tiếp theo →</button></div>
+          <div class="art-footer"><span>Biến giá trị thành hành động mỗi ngày.</span><button id="next-art" type="button">Chủ đề tiếp theo →</button></div>
         </div>
       </article>
     </div>
@@ -144,9 +144,9 @@ document.querySelector('#app').innerHTML = `
       <article class="help-dialog" role="dialog" aria-modal="true" aria-labelledby="help-title">
         <button class="close-button" id="close-help" type="button" aria-label="Đóng">×</button>
         <span class="help-sun">${sunIcon}</span>
-        <p class="section-label">BẮT ĐẦU KHÁM PHÁ AI LAB</p>
-        <h2 id="help-title">Học bằng cách quan sát và kiểm chứng</h2>
-        <p>Dùng <strong>W A S D</strong> hoặc các phím mũi tên để điều khiển nhân vật; trên điện thoại, kéo joystick để di chuyển theo mọi hướng. Kéo chuột để đổi góc nhìn và cuộn để phóng to. Nhấp vào tranh để học từng chủ đề AI; nhấp vào TV trên kệ sách để chơi quiz. Khi tới gần, bạn cũng có thể nhấn <strong>E</strong>.</p>
+        <p class="section-label">BẮT ĐẦU KHÁM PHÁ CẨM NANG SỐ</p>
+        <h2 id="help-title">Học bằng cách quan sát và vận dụng</h2>
+        <p>Dùng <strong>W A S D</strong> hoặc các phím mũi tên để điều khiển nhân vật; trên điện thoại, kéo joystick để di chuyển theo mọi hướng. Kéo chuột để đổi góc nhìn và cuộn để phóng to. Nhấp vào tranh để học từng chủ đề; nhấp vào TV trên kệ sách để chơi quiz. Khi tới gần, bạn cũng có thể nhấn <strong>E</strong>.</p>
         <div class="lan-name-form">
           <label>Hồ sơ trong lớp</label>
           <div class="profile-summary"><span id="profile-summary">Chưa chọn nhân vật</span><button id="edit-profile" type="button">Đổi hồ sơ</button></div>
@@ -166,9 +166,9 @@ document.querySelector('#app').innerHTML = `
           <img id="quiz-bird" class="quiz-bird" src="/flappy/yellowbird-midflap.png" alt="">
         </div>
         <div class="quiz-body">
-          <p class="section-label">TV AI LAB · QUIZ NHANH</p>
-          <h2 id="quiz-title">Bay qua thế giới AI</h2>
-          <p class="quiz-intro">Chọn đáp án để đưa chú chim qua từng cánh cổng kiến thức AI.</p>
+          <p class="section-label">TV HCM202 · QUIZ NHANH</p>
+          <h2 id="quiz-title">Bay qua cẩm nang số</h2>
+          <p class="quiz-intro">Chọn đáp án để đưa chú chim qua từng cánh cổng về văn hóa và con người.</p>
           <div id="quiz-play">
             <div class="quiz-meta"><span id="quiz-number"></span><span id="quiz-score"></span></div>
             <h3 id="quiz-question"></h3>
@@ -190,7 +190,7 @@ document.querySelector('#app').innerHTML = `
       <div class="modal-backdrop"></div>
       <article class="exam-dialog" role="dialog" aria-modal="true" aria-labelledby="exam-title">
         <header class="exam-paper-header">
-          <div><p class="section-label">AI LAB · BÀI KIỂM TRA VẬN DỤNG</p><h2 id="exam-title">Hiểu và sử dụng AI có trách nhiệm</h2><span id="exam-subtitle">10 câu trắc nghiệm · 15 phút</span></div>
+          <div><p class="section-label">HCM202 · BÀI KIỂM TRA VẬN DỤNG</p><h2 id="exam-title">Văn hóa và con người trong tư tưởng Hồ Chí Minh</h2><span id="exam-subtitle">10 câu trắc nghiệm · 15 phút</span></div>
           <strong id="exam-timer" aria-live="off">15:00</strong>
         </header>
         <div class="exam-scroll"><form id="exam-form"></form></div>
@@ -509,8 +509,8 @@ function openArtwork(artwork) {
   closeBubbles();
   resetJoystick();
   currentArtwork = artwork;
-  document.querySelector('#art-image').src = artwork.canvas.toDataURL('image/png');
-  document.querySelector('#art-image').alt = `Tranh ${artwork.title}`;
+  document.querySelector('#art-image').src = artwork.imageUrl;
+  document.querySelector('#art-image').alt = artwork.imageAlt;
   document.querySelector('#art-title').textContent = artwork.title;
   document.querySelector('#art-category').textContent = artwork.category;
   document.querySelector('#art-note').textContent = artwork.note;

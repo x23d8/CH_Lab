@@ -8,6 +8,7 @@ const roomSelectionMigration = await readFile(new URL('../supabase/migrations/20
 const examQuestionsMigration = await readFile(new URL('../supabase/migrations/20261005_exam_questions_10.sql', import.meta.url), 'utf8');
 const avatarProfilesMigration = await readFile(new URL('../supabase/migrations/20261006_avatar_profiles.sql', import.meta.url), 'utf8');
 const aiClassroomMigration = await readFile(new URL('../supabase/migrations/20261006_ai_classroom_content.sql', import.meta.url), 'utf8');
+const hcmShowcaseMigration = await readFile(new URL('../supabase/migrations/20261006_z_hcm202_showcase_content.sql', import.meta.url), 'utf8');
 const id = number => `00000000-0000-4000-8000-${String(number).padStart(12, '0')}`;
 
 test('migration: phân 10 người/phòng và dùng một lượt kiểm tra cho mọi phòng', async () => {
@@ -31,6 +32,7 @@ test('migration: phân 10 người/phòng và dùng một lượt kiểm tra cho
     await db.exec(examQuestionsMigration);
     await db.exec(avatarProfilesMigration);
     await db.exec(aiClassroomMigration);
+    await db.exec(hcmShowcaseMigration);
     const call = async (number, query) => {
       await db.query(`select set_config('request.jwt.claim.sub', $1, false)`, [id(number)]);
       return (await db.query(query)).rows[0];
@@ -83,7 +85,7 @@ test('migration: phân 10 người/phòng và dùng một lượt kiểm tra cho
     assert.equal(otherRoom.questions.length, 10);
     assert.equal((await call(3, 'select public.hcm_state() as state')).state.me.eligible, false);
 
-    const first = (await call(2, "select public.hcm_submit_exam('[1,2,1,0,1,2,1,1,0,3]'::jsonb) as state")).state;
+    const first = (await call(2, "select public.hcm_submit_exam('[0,0,2,0,1,1,2,0,0,3]'::jsonb) as state")).state;
     assert.equal(first.me.submitted, true);
     assert.equal(first.exam.submittedCount, 1);
     const second = (await call(11, "select public.hcm_submit_exam('[0,0,0,0,0,0,0,0,0,0]'::jsonb) as state")).state;
