@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { WebSocketServer, WebSocket } from 'ws';
-import { seatPosition, EXAM_MINUTES } from '../src/classroom-config.js';
+import { seatPosition, standingPosition, SPAWN_POSITION, EXAM_MINUTES } from '../src/classroom-config.js';
 import { publicExamQuestions } from './exam-questions.js';
 import { scoreAnswers, rankSubmissions } from './scoring.js';
 import { normalizeAvatarProfile } from '../src/avatar-options.js';
@@ -78,13 +78,18 @@ export function createLanServer({ port = 5174, host = '0.0.0.0' } = {}) {
     }
     if (player?.ws && player.ws !== ws) player.ws.close(4000, 'Phiên đã mở trên thiết bị khác');
     if (!player) {
-      player = { id, x: 4.6, z: 3.7, rotation: 0, seatId: null, roomNo: nextRoom, lastPoseAt: Date.now() };
+      player = { id, x: SPAWN_POSITION.x, z: SPAWN_POSITION.z, rotation: SPAWN_POSITION.rotation,
+        seatId: null, roomNo: nextRoom, lastPoseAt: Date.now() };
       players.set(id, player);
     }
     if (player.roomNo !== nextRoom) {
-      player.roomNo = nextRoom; player.seatId = null;
-      player.x = 4.6; player.z = 3.7; player.rotation = 0; player.lastPoseAt = Date.now();
+      player.roomNo = nextRoom;
     }
+    // A join/refresh is a clean entrance to the classroom. Never restore a
+    // stale seated pose or a saved position that may now be inside furniture.
+    player.seatId = null;
+    player.x = SPAWN_POSITION.x; player.z = SPAWN_POSITION.z;
+    player.rotation = SPAWN_POSITION.rotation; player.lastPoseAt = Date.now();
     if (teacherId === id && !wantsTeacher) teacherId = null;
     player.name = wantsTeacher ? 'Giảng viên' : requestedName;
     player.role = wantsTeacher ? 'teacher' : 'student';
@@ -158,8 +163,8 @@ export function createLanServer({ port = 5174, host = '0.0.0.0' } = {}) {
       broadcastState();
     } else if (message.type === 'stand') {
       if (player.seatId === null) return;
-      const seat = seatPosition(player.seatId);
-      player.x = seat.x; player.z = Math.min(5.75, seat.z + .65);
+      const stand = standingPosition(player.seatId);
+      player.x = stand.x; player.z = stand.z; player.rotation = stand.rotation;
       player.seatId = null; player.lastPoseAt = Date.now();
       broadcastState();
     } else if (message.type === 'start_exam') {

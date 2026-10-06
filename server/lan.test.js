@@ -5,6 +5,7 @@ import { randomUUID } from 'node:crypto';
 import { WebSocket } from 'ws';
 import { createLanServer } from './lan.js';
 import { rankSubmissions, scoreAnswers } from './scoring.js';
+import { SPAWN_POSITION, standingPosition } from '../src/classroom-config.js';
 
 test('chấm theo số câu đúng rồi thời gian hoàn thành', () => {
   assert.equal(scoreAnswers([0, 0, 2, 0, 1, 1, 2, 0, 0, 3]), 10);
@@ -58,7 +59,7 @@ test('hai sinh viên ngồi, giảng viên mở đề và máy chủ xếp hạn
   }
 
   async function walkTo(client, targetX, targetZ) {
-    let x = 4.6; let z = 3.7;
+    let x = SPAWN_POSITION.x; let z = SPAWN_POSITION.z;
     while (Math.hypot(targetX - x, targetZ - z) > .01) {
       const dx = targetX - x; const dz = targetZ - z;
       const factor = Math.min(1, .43 / Math.hypot(dx, dz));
@@ -119,4 +120,17 @@ test('hai sinh viên ngồi, giảng viên mở đề và máy chủ xếp hạn
   const resetState = await teacher.wait('state', state => state.exam?.round === 1 && state.exam.phase === 'idle');
   assert.equal(resetState.exam.participantCount, 0);
   assert.deepEqual(resetState.exam.rankings, []);
+
+  first.send({ type: 'stand' });
+  const safeStand = standingPosition(8);
+  const stoodUp = await first.wait('state', state => {
+    const own = state.players?.find(player => player.id === first.identity.id);
+    return state.me?.seatId === null && own?.x === safeStand.x && own?.z === safeStand.z;
+  });
+  const ownStanding = stoodUp.players.find(player => player.id === first.identity.id);
+  assert.equal(ownStanding.x, safeStand.x);
+  assert.equal(ownStanding.z, safeStand.z);
+  first.send({ type: 'pose', x: safeStand.x + .2, z: safeStand.z, rotation: Math.PI / 2 });
+  const poseAfterStanding = await teacher.wait('pose', pose => pose.id === first.identity.id && pose.x > safeStand.x + .1);
+  assert.equal(poseAfterStanding.type, 'pose');
 });

@@ -429,6 +429,7 @@ function handleOnlineMessage(message) {
     const avatar = selectedAvatar.id;
     localStorage.setItem('hcm202-gender', gender);
     localStorage.setItem('hcm202-avatar', avatar);
+    classroom?.resetSelfPose();
     classroom?.setProfile({ name: message.name, gender, avatar });
     document.querySelector('#profile-summary').textContent = `${message.name} · ${selectedAvatar.name} · ${genderLabel(gender)} · Phòng ${roomNo}`;
     document.querySelector('#chat-room').textContent = String(roomNo);

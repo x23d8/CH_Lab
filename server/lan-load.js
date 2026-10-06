@@ -3,6 +3,7 @@ import { once } from 'node:events';
 import { monitorEventLoopDelay, performance } from 'node:perf_hooks';
 import { WebSocket } from 'ws';
 import { createLanServer } from './lan.js';
+import { SPAWN_POSITION } from '../src/classroom-config.js';
 
 const players = 10;
 const tickMs = 100;
@@ -55,8 +56,8 @@ try {
     const nextTick = startedAt + ticks * tickMs;
     await wait(Math.max(0, nextTick - performance.now()));
     for (let index = 0; index < players; index++) {
-      const x = 4.6 + index * .01 + ticks * .000001;
-      const z = 3.7 + .6 * Math.sin((ticks * tickMs / 1000) * Math.PI / 2 + index * .35);
+      const x = SPAWN_POSITION.x + index * .01 + ticks * .000001;
+      const z = SPAWN_POSITION.z + .6 * Math.sin((ticks * tickMs / 1000) * Math.PI / 2 + index * .35);
       sendTimes.set(`${idByIndex.get(index)}:${x}`, performance.now());
       clients[index].send(JSON.stringify({ type: 'pose', x, z, rotation: 0 }));
     }

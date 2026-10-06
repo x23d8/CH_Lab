@@ -1,5 +1,10 @@
--- Add explicit room selection to an existing classroom installation.
--- Run this migration after 20261001_online_classroom.sql.
+-- Give every join a clean spawn and place standing players in the aisle.
+-- Run after the other 20261006 migrations. Safe to run more than once.
+
+alter table public.hcm_members
+  alter column x set default 5.4,
+  alter column z set default 3.7,
+  alter column rotation set default 3.141592653589793;
 
 create or replace function hcm_private.hcm_join_room(p_name text, p_room integer)
 returns jsonb language plpgsql security definer set search_path = '' as $$
@@ -31,7 +36,9 @@ begin
   end if;
   insert into public.hcm_members(user_id, name, role, room_no, seat_id, x, z, rotation, last_seen)
     values (v_uid, case when v_role = 'teacher' then 'Giảng viên' else v_name end, v_role, v_room, null, 5.4, 3.7, pi(), clock_timestamp())
-  on conflict (user_id) do update set name = excluded.name, role = excluded.role,
+  on conflict (user_id) do update set
+    name = excluded.name,
+    role = excluded.role,
     room_no = excluded.room_no,
     seat_id = null,
     x = excluded.x,
@@ -42,12 +49,20 @@ begin
 end;
 $$;
 
-create or replace function public.hcm_join_room(p_name text, p_room integer)
-returns jsonb language sql security invoker set search_path = '' as $$
-  select hcm_private.hcm_join_room(p_name, p_room);
+create or replace function hcm_private.hcm_stand()
+returns jsonb language plpgsql security definer set search_path = '' as $$
+declare v_member public.hcm_members%rowtype;
+begin
+  select * into v_member from public.hcm_members where user_id = auth.uid() for update;
+  if not found then raise exception 'Bạn chưa vào lớp.'; end if;
+  if v_member.seat_id is not null then
+    update public.hcm_members
+    set seat_id = null,
+      z = least(5.75, z + 0.43),
+      rotation = pi(),
+      last_seen = clock_timestamp()
+    where user_id = v_member.user_id;
+  end if;
+  return hcm_private.hcm_state();
+end;
 $$;
-
-revoke all on function hcm_private.hcm_join_room(text, integer) from public;
-grant execute on function hcm_private.hcm_join_room(text, integer) to authenticated;
-revoke all on function public.hcm_join_room(text, integer) from public, anon;
-grant execute on function public.hcm_join_room(text, integer) to authenticated;

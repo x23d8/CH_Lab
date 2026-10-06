@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { normalizeAvatarProfile } from './avatar-options.js';
+import { SPAWN_POSITION } from './classroom-config.js';
 
 function friendlyError(error) {
   const message = error?.message || String(error);
@@ -25,7 +26,7 @@ export function createSupabaseOnlineClient(url, key, onMessage, onStatus) {
   let latestState = null;
   let peers = new Map();
   let presenceReady = false;
-  let currentPose = { x: 4.6, z: 3.7, rotation: 0, vx: 0, vz: 0 };
+  let currentPose = { ...SPAWN_POSITION, vx: 0, vz: 0 };
   let lastPose = null;
   let lastPoseAt = 0;
   let lastChatAt = 0;
@@ -83,9 +84,9 @@ export function createSupabaseOnlineClient(url, key, onMessage, onStatus) {
         id: meta.id, name: meta.name, role: meta.role,
         gender: profile.gender, avatar: profile.avatar,
         seatId: meta.seatId ?? null,
-        x: old && old.seatId === (meta.seatId ?? null) ? old.x : meta.x ?? 4.6,
-        z: old && old.seatId === (meta.seatId ?? null) ? old.z : meta.z ?? 3.7,
-        rotation: old && old.seatId === (meta.seatId ?? null) ? old.rotation : meta.rotation ?? 0,
+        x: old && old.seatId === (meta.seatId ?? null) ? old.x : meta.x ?? SPAWN_POSITION.x,
+        z: old && old.seatId === (meta.seatId ?? null) ? old.z : meta.z ?? SPAWN_POSITION.z,
+        rotation: old && old.seatId === (meta.seatId ?? null) ? old.rotation : meta.rotation ?? SPAWN_POSITION.rotation,
         vx: old && old.seatId === (meta.seatId ?? null) ? old.vx ?? 0 : meta.vx ?? 0,
         vz: old && old.seatId === (meta.seatId ?? null) ? old.vz ?? 0 : meta.vz ?? 0,
       });
@@ -255,6 +256,11 @@ export function createSupabaseOnlineClient(url, key, onMessage, onStatus) {
       joinedRoom = true;
       const previousExam = latestState?.exam;
       latestState = state;
+      const own = state.players.find(player => player.id === userId);
+      currentPose = own
+        ? { x: own.x, z: own.z, rotation: own.rotation, vx: 0, vz: 0 }
+        : { ...SPAWN_POSITION, vx: 0, vz: 0 };
+      lastPose = null;
       await ensureChannels(state.me.roomNo);
       connected = true;
       await trackPresence();

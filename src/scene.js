@@ -3,7 +3,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { clone as cloneSkeleton } from 'three/addons/utils/SkeletonUtils.js';
 import { artworks } from './presentation-art.js';
-import { deskPositions, seatPosition } from './classroom-config.js';
+import { deskPositions, seatPosition, SPAWN_POSITION } from './classroom-config.js';
 import { approachMotionPose, createMotionBuffer, predictMotionPose, pushMotionSample } from './remote-motion.js';
 import { getAvatarOption } from './avatar-options.js';
 
@@ -317,7 +317,7 @@ function addQuizTv(shelf) {
 }
 
 function makeCharacter(room) {
-  const root = new THREE.Group(); root.position.set(4.6, 0, 3.7); room.add(root);
+  const root = new THREE.Group(); root.position.set(SPAWN_POSITION.x, 0, SPAWN_POSITION.z); room.add(root);
   const body = new THREE.Group(); root.add(body);
   const navy = mat(0x547f96); const hair = mat(0x55475a); const skin = mat(0xf3bf9f);
   const shoe = mat(0x667386); const blush = flat(0xe9938e);
@@ -406,7 +406,8 @@ function makeCharacter(room) {
         chest: findBones(model, [/^Chest_/, /^spine003_/, /^j_mune_wj_/]),
       };
       const defaults = new Map(Object.values(bones).flat().map(bone => [bone, bone.quaternion.clone()]));
-      modelRig = { avatar, model, bones, defaults };
+      const canBendLegs = bones.leftThigh.length > 0 && bones.rightThigh.length > 0;
+      modelRig = { avatar, model, bones, defaults, canBendLegs };
       loadingAvatar = null;
       refreshAvatarVisibility();
     }).catch(error => {
@@ -457,7 +458,10 @@ function makeCharacter(room) {
   }
   function animate({ walking, phase, stride = 0, seated = false, dt, now }) {
     const usingModel = currentAvatar !== 'male-classic' && modelRig?.avatar === currentAvatar;
-    const targetY = usingModel && seated ? -0.28 : walking ? Math.abs(Math.sin(phase)) * 0.055 * stride : usingModel ? Math.sin(now * .0018) * .009 : 0;
+    // Rigged avatars keep their hips near chair-seat height. Models without
+    // recognized leg bones are lifted onto the seat instead of sinking under it.
+    const seatedY = modelRig?.canBendLegs ? -0.06 : 0.54;
+    const targetY = usingModel && seated ? seatedY : walking ? Math.abs(Math.sin(phase)) * 0.055 * stride : usingModel ? Math.sin(now * .0018) * .009 : 0;
     body.position.y += (targetY - body.position.y) * (1 - Math.exp(-dt * 14));
 
     const swing = walking ? Math.sin(phase) * stride : 0;
@@ -479,10 +483,10 @@ function makeCharacter(room) {
     // instead of curling forward into the old T-pose correction.
     poseBones(bones.leftForearm, 0, 0, 0, blend);
     poseBones(bones.rightForearm, 0, 0, 0, blend);
-    poseBones(bones.leftThigh, seated ? -1.05 : -swing * .5, 0, 0, blend);
-    poseBones(bones.rightThigh, seated ? -1.05 : swing * .5, 0, 0, blend);
-    poseBones(bones.leftKnee, seated ? 1.28 : Math.max(0, swing) * .3, 0, 0, blend);
-    poseBones(bones.rightKnee, seated ? 1.28 : Math.max(0, -swing) * .3, 0, 0, blend);
+    poseBones(bones.leftThigh, seated && modelRig.canBendLegs ? -1.05 : -swing * .5, 0, 0, blend);
+    poseBones(bones.rightThigh, seated && modelRig.canBendLegs ? -1.05 : swing * .5, 0, 0, blend);
+    poseBones(bones.leftKnee, seated && modelRig.canBendLegs ? 1.28 : Math.max(0, swing) * .3, 0, 0, blend);
+    poseBones(bones.rightKnee, seated && modelRig.canBendLegs ? 1.28 : Math.max(0, -swing) * .3, 0, 0, blend);
     poseBones(bones.head, 0, idle * .035, idle * .012, blend);
     poseBones(bones.chest, idle * .008, 0, walking ? -swing * .035 : idle * .008, blend);
     model.rotation.z += (((walking ? -swing * .025 : idle * .009)) - model.rotation.z) * blend;
@@ -615,8 +619,20 @@ export function createClassroom(canvas, { onArtwork, onQuiz, onNearby, onSeat = 
         if (!selfPoseInitialized || player.seatId !== selfSeatId) {
           selfPoseInitialized = true;
           selfSeatId = player.seatId;
-          character.root.position.set(player.x, 0, player.z);
-          character.body.rotation.y = player.rotation;
+          const safePose = player.seatId === null && !canMove(player.x, player.z)
+            ? SPAWN_POSITION
+            : player;
+          character.root.position.set(safePose.x, 0, safePose.z);
+          character.body.rotation.y = safePose.rotation;
+          velocityX = 0;
+          velocityZ = 0;
+          keys.clear();
+          mobile.x = 0;
+          mobile.z = 0;
+          if (safePose === SPAWN_POSITION) {
+            onPose({ ...SPAWN_POSITION, vx: 0, vz: 0 });
+            lastPoseFrame = performance.now();
+          }
         }
         continue;
       }
@@ -815,6 +831,15 @@ export function createClassroom(canvas, { onArtwork, onQuiz, onNearby, onSeat = 
   return {
     setMovement(x, z) { mobile.x = x; mobile.z = z; },
     setActive(value) { active = value; if (!active) keys.clear(); },
+    resetSelfPose() {
+      selfPoseInitialized = false;
+      selfSeatId = null;
+      velocityX = 0;
+      velocityZ = 0;
+      keys.clear();
+      mobile.x = 0;
+      mobile.z = 0;
+    },
     resetCamera() { camera.position.set(19, 18, 23); controls.target.set(0, 1.45, 0); camera.zoom = 0.9; camera.updateProjectionMatrix(); controls.update(); },
     inspectNearby() { activateInteraction(nearestInteraction()); },
     setProfile({ name = 'Sinh viên', gender = 'male', avatar = 'male-classic' }) {

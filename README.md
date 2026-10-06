@@ -6,7 +6,7 @@ Lớp học 3D bằng Three.js và Vite chuyển nội dung bài thuyết trình
 
 1. Tạo dự án Supabase. Trong **Authentication → Providers**, bật **Anonymous Sign-Ins**.
 2. Với dự án mới, chạy lần lượt các migration trong `supabase/migrations` theo thứ tự tên file.
-3. Với dự án đã cài trước đó, chạy thêm [migration nội dung HCM202 mới nhất](supabase/migrations/20261006_z_hcm202_showcase_content.sql). Migration đưa bài kiểm tra về trạng thái chờ và xóa kết quả của lượt hiện tại để tránh thay câu hỏi giữa lúc đang thi.
+3. Với dự án đã cài trước đó, chạy [migration nội dung HCM202](supabase/migrations/20261006_z_hcm202_showcase_content.sql), sau đó chạy [migration spawn và phục hồi trạng thái ghế](supabase/migrations/20261006_zz_spawn_seat_recovery.sql). Migration sau cùng đặt điểm vào lớp ở vùng trống và đưa nhân vật ra đúng lối đi khi đứng dậy.
 4. Tạo `.env` từ `.env.example` và điền URL cùng **publishable key**. Không đưa `service_role` hoặc secret key vào ứng dụng trình duyệt. Các biến `NEXT_PUBLIC_SUPABASE_URL` và `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` cũng được hỗ trợ.
 5. Chạy:
 

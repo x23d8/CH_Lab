@@ -4,7 +4,7 @@ import { loadEnv } from 'vite';
 import { readFile, rm, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
-import { seatPosition } from '../src/classroom-config.js';
+import { seatPosition, SPAWN_POSITION } from '../src/classroom-config.js';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const statusPath = resolve(root, '.simulated-students.json');
@@ -116,14 +116,16 @@ try {
       if (subscription === 'SUBSCRIBED' && !stopping) {
         await channel.track({
           id: state.me.id, name, role: 'student', seatId: bot.seatId,
-          x: bot.seatId === null ? 4.6 : seatPosition(bot.seatId).x,
-          z: bot.seatId === null ? 3.7 : seatPosition(bot.seatId).z,
-          rotation: 0,
+          x: bot.seatId === null ? SPAWN_POSITION.x : seatPosition(bot.seatId).x,
+          z: bot.seatId === null ? SPAWN_POSITION.z : seatPosition(bot.seatId).z,
+          rotation: bot.seatId === null ? SPAWN_POSITION.rotation : Math.PI,
         }).catch(error => console.warn(`${name}: Presence: ${error.message}`));
       }
     });
     bot.heartbeat = setInterval(async () => {
-      try { await rpc(client, 'hcm_touch', { p_x: 4.6, p_z: 3.7, p_rotation: 0 }); }
+      try { await rpc(client, 'hcm_touch', {
+        p_x: SPAWN_POSITION.x, p_z: SPAWN_POSITION.z, p_rotation: SPAWN_POSITION.rotation,
+      }); }
       catch (heartbeatError) { console.warn(`${name}: heartbeat: ${heartbeatError.message}`); }
     }, 15000);
     console.log(`${name} → phòng ${roomNo}${bot.seatId === null ? ' (đứng)' : `, ghế ${bot.seatId + 1}`}`);

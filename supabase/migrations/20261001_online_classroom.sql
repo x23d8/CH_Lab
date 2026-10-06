@@ -12,9 +12,9 @@ create table if not exists public.hcm_members (
   avatar text not null default 'male-classic',
   room_no integer not null check (room_no between 1 and 9999),
   seat_id integer check (seat_id between 0 and 9),
-  x double precision not null default 4.6,
+  x double precision not null default 5.4,
   z double precision not null default 3.7,
-  rotation double precision not null default 0,
+  rotation double precision not null default 3.141592653589793,
   last_seen timestamptz not null default clock_timestamp()
 );
 alter table public.hcm_members drop constraint if exists hcm_members_gender_check;
@@ -238,13 +238,13 @@ begin
     end loop;
   end if;
   insert into public.hcm_members(user_id, name, role, room_no, seat_id, x, z, rotation, last_seen)
-    values (v_uid, case when v_role = 'teacher' then 'Giảng viên' else v_name end, v_role, v_room, null, 4.6, 3.7, 0, clock_timestamp())
+    values (v_uid, case when v_role = 'teacher' then 'Giảng viên' else v_name end, v_role, v_room, null, 5.4, 3.7, pi(), clock_timestamp())
   on conflict (user_id) do update set name = excluded.name, role = excluded.role,
     room_no = excluded.room_no,
-    seat_id = case when excluded.role = 'teacher' or public.hcm_members.room_no <> excluded.room_no then null else public.hcm_members.seat_id end,
-    x = case when public.hcm_members.room_no <> excluded.room_no then excluded.x else public.hcm_members.x end,
-    z = case when public.hcm_members.room_no <> excluded.room_no then excluded.z else public.hcm_members.z end,
-    rotation = case when public.hcm_members.room_no <> excluded.room_no then excluded.rotation else public.hcm_members.rotation end,
+    seat_id = null,
+    x = excluded.x,
+    z = excluded.z,
+    rotation = excluded.rotation,
     last_seen = clock_timestamp();
   return hcm_private.hcm_state();
 end;
@@ -314,7 +314,7 @@ begin
   select * into v_member from public.hcm_members where user_id = auth.uid() for update;
   if not found then raise exception 'Bạn chưa vào lớp.'; end if;
   if v_member.seat_id is not null then
-    update public.hcm_members set seat_id = null, z = least(5.75, z + 0.65), last_seen = clock_timestamp() where user_id = v_member.user_id;
+    update public.hcm_members set seat_id = null, z = least(5.75, z + 0.43), rotation = pi(), last_seen = clock_timestamp() where user_id = v_member.user_id;
   end if;
   return hcm_private.hcm_state();
 end;
